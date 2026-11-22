@@ -73,8 +73,7 @@ buck-out/
 /test/version-guard.mjs
 /test/engine-test-result.json
 
-# [BATCH] 本地记忆与签名材料
-/MEMORY.local.md
+# [BATCH] 本地签名材料（不入库）
 /android/keystore.properties
 /android/app/*.keystore
 !/android/app/debug.keystore
