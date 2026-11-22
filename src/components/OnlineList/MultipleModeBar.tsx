@@ -16,6 +16,7 @@ export interface MultipleModeBarProps {
   onSwitchMode: (mode: SelectMode) => void
   onSelectAll: (isAll: boolean) => void
   onExitSelectMode: () => void
+  onDownload: () => void
 }
 export interface MultipleModeBarType {
   show: () => void
@@ -24,7 +25,7 @@ export interface MultipleModeBarType {
   exitSelectMode: () => void
 }
 
-export default forwardRef<MultipleModeBarType, MultipleModeBarProps>(({ onSelectAll, onSwitchMode, onExitSelectMode }, ref) => {
+export default forwardRef<MultipleModeBarType, MultipleModeBarProps>(({ onSelectAll, onSwitchMode, onExitSelectMode, onDownload }, ref) => {
   // const isGetDetailFailedRef = useRef(false)
   const [visible, setVisible] = useState(false)
   const [animatePlayed, setAnimatPlayed] = useState(true)
@@ -122,6 +123,9 @@ export default forwardRef<MultipleModeBarType, MultipleModeBarProps>(({ onSelect
             <Text color={theme['c-button-font']}>{global.i18n.t('list_select_range')}</Text>
           </Button>
         </View>
+        <TouchableOpacity onPress={onDownload} style={styles.btn}>
+          <Text color={theme['c-primary-font']}>{global.i18n.t('download')}</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={handleSelectAll} style={styles.btn}>
           <Text color={theme['c-button-font']}>{global.i18n.t(isSelectAll ? 'list_select_unall' : 'list_select_all')}</Text>
         </TouchableOpacity>
@@ -130,7 +134,7 @@ export default forwardRef<MultipleModeBarType, MultipleModeBarProps>(({ onSelect
         </TouchableOpacity>
       </Animated.View>
     )
-  }, [animaStyle, selectMode, theme, handleSelectAll, isSelectAll, onExitSelectMode, onSwitchMode])
+  }, [animaStyle, selectMode, theme, handleSelectAll, isSelectAll, onExitSelectMode, onSwitchMode, onDownload])
 
   return !visible && animatePlayed ? null : component
 })
@@ -152,8 +156,8 @@ const styles = createStyle({
   },
   btn: {
     // flex: 1,
-    paddingLeft: 18,
-    paddingRight: 18,
+    paddingLeft: 11,
+    paddingRight: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },

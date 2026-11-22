@@ -68,7 +68,22 @@ const defaultSetting: LX.AppSetting = {
   'list.isSaveScrollLocation': true,
   'list.addMusicLocationType': 'top',
 
-  'download.fileName': '歌名 - 歌手',
+  'download.fileName': '歌手 - 歌名',
+  'download.fileNameTemplate': '{歌手} - {歌名}',
+  'download.quality': 'auto',
+  'download.isDownloadLyric': true,
+  'download.isDownloadTLyric': true,
+  'download.isDownloadRLyric': true,
+  'download.isEmbedLyric': true,
+  'download.isDownloadPic': true,
+  'download.isWriteMetadata': true,
+  'download.isWriteExtraMetadata': true,
+  'download.isSkipExist': true,
+  'download.isScanMedia': true,
+  'download.concurrent': 3,
+  'download.maxRetry': 2,
+  'download.isWifiOnly': false,
+  'download.isSaveLog': true,
 
   'sync.enable': false,
 

@@ -34,8 +34,9 @@ const state: InitState = {
     showModal: false,
     reCheck: false,
     isUnknown: false,
-    isLatest: false,
-    status: 'checking',
+    // [BATCH] 更新检查已关闭，初始即为「已是最新」，不发请求也不弹提示
+    isLatest: true,
+    status: 'idle',
   },
   ignoreVersion: null,
   progress: {

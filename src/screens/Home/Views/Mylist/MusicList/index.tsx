@@ -6,7 +6,7 @@ import { clearMusicUrl, handleDislikeMusic, handlePlay, handlePlayLater, handleR
 import List, { type ListType } from './List'
 import ListMusicAdd, { type MusicAddModalType as ListMusicAddType } from '@/components/MusicAddModal'
 import ListMusicMultiAdd, { type MusicMultiAddModalType as ListAddMultiType } from '@/components/MusicMultiAddModal'
-import { createStyle } from '@/utils/tools'
+import { createStyle, requestStoragePermission, toast } from '@/utils/tools'
 import { type LayoutChangeEvent, View } from 'react-native'
 import ActiveList, { type ActiveListType } from './ActiveList'
 import MultipleModeBar, { type SelectMode, type MultipleModeBarType } from './MultipleModeBar'
@@ -15,6 +15,7 @@ import ListMusicSearch, { type ListMusicSearchType } from './ListMusicSearch'
 import MusicPositionModal, { type MusicPositionModalType } from './MusicPositionModal'
 import MetadataEditModal, { type MetadataEditType, type MetadataEditProps } from '@/components/MetadataEditModal'
 import MusicToggleModal, { type MusicToggleModalType } from './MusicToggleModal'
+import { enqueueDownloads, getLastSpaceInfo } from '@/core/download'
 
 
 export default () => {
@@ -94,6 +95,32 @@ export default () => {
     layoutHeightRef.current = e.nativeEvent.layout.height
   }, [])
 
+  const downloadList = useCallback(async(list: LX.Music.MusicInfo[]) => {
+    const onlineList = list.filter(musicInfo => musicInfo.source !== 'local')
+    if (!onlineList.length) {
+      toast(global.i18n.t('download_no_tasks'), 'short')
+      return
+    }
+    const granted = await requestStoragePermission()
+    if (granted !== true) {
+      toast(global.i18n.t('download_permission_denied'), 'long')
+      return
+    }
+    const num = await enqueueDownloads(onlineList, { listName: '我的列表' })
+    const space = getLastSpaceInfo()
+    if (space) {
+      toast(global.i18n.t('download_low_space', {
+        need: Math.round(space.need / 1048576),
+        free: Math.round(space.free / 1048576),
+      }), 'long')
+    } else {
+      toast(global.i18n.t('download_added', { num }), 'short')
+    }
+    hancelExitSelect()
+  }, [hancelExitSelect])
+  const handleDownload = useCallback((info: SelectInfo) => {
+    void downloadList(info.selectedList.length ? info.selectedList : [info.musicInfo])
+  }, [downloadList])
   const handleAddMusic = useCallback((info: SelectInfo) => {
     if (info.selectedList.length) {
       listMusicMultiAddRef.current?.show({ selectedList: info.selectedList, listId: info.listId, isMove: false })
@@ -125,6 +152,7 @@ export default () => {
         <ActiveList ref={activeListRef} onShowSearchBar={handleShowSearch} onScrollToTop={hancelScrollToTop} />
         <MultipleModeBar
           ref={multipleModeBarRef}
+          onDownload={() => { void downloadList(listRef.current?.getSelectedList() ?? []) }}
           onSwitchMode={hancelSwitchSelectMode}
           onSelectAll={isAll => listRef.current?.selectAll(isAll)}
           onExitSelectMode={hancelExitSelect}
@@ -155,6 +183,7 @@ export default () => {
         ref={listMenuRef}
         onPlay={info => { handlePlay(info.listId, info.index) }}
         onPlayLater={info => { hancelExitSelect(); handlePlayLater(info.listId, info.musicInfo, info.selectedList, hancelExitSelect) }}
+        onDownload={handleDownload}
         onRemove={info => { hancelExitSelect(); handleRemove(info.listId, info.musicInfo, info.selectedList, hancelExitSelect) }}
         onDislikeMusic={info => { void handleDislikeMusic(info.musicInfo) }}
         onCopyName={info => { handleShare(info.musicInfo) }}

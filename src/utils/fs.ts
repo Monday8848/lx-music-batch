@@ -23,6 +23,9 @@ export const privateStorageDirectoryPath = Dirs.DocumentDir
 
 export const getExternalStoragePaths = async(is_removable?: boolean) => _getExternalStoragePaths(is_removable)
 
+/** 磁盘容量信息，用于下载前的空间预检 */
+export const getFSInfo = async() => RNFS.getFSInfo()
+
 export const selectManagedFolder = async(isPersist: boolean = false) => AndroidScoped.openDocumentTree(isPersist)
 export const selectFile = async(options: OpenDocumentOptions) => AndroidScoped.openDocument(options)
 export const removeManagedFolder = async(path: string) => AndroidScoped.releasePersistableUriPermission(path)

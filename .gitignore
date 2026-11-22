@@ -66,3 +66,15 @@ buck-out/
 
 # testing
 /coverage
+
+# [BATCH] 测试编译产物（由 test/build*.mjs 生成）
+/test/out.mjs
+/test/verify-out.mjs
+/test/version-guard.mjs
+/test/engine-test-result.json
+
+# [BATCH] 本地记忆与签名材料
+/MEMORY.local.md
+/android/keystore.properties
+/android/app/*.keystore
+!/android/app/debug.keystore

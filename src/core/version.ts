@@ -1,11 +1,8 @@
-import { compareVer } from '@/utils'
-import { downloadNewVersion, getVersionInfo } from '@/utils/version'
 import versionActions from '@/store/version/action'
 import versionState, { type InitState } from '@/store/version/state'
-import { getIgnoreVersion, getIgnoreVersionFailTipTime, saveIgnoreVersion, saveIgnoreVersionFailTipTime } from '@/utils/data'
+import { saveIgnoreVersion } from '@/utils/data'
 import { showVersionModal } from '@/navigation'
 import { Navigation } from 'react-native-navigation'
-import { toast } from '@/utils/tools'
 
 export const showModal = () => {
   if (versionState.showModal) return
@@ -19,70 +16,30 @@ export const hideModal = (componentId: string) => {
   void Navigation.dismissOverlay(componentId)
 }
 
+/**
+ * [BATCH] 更新检查已关闭：不联网、不比较版本、不弹更新提示。
+ *
+ * 保留该导出是因为 src/core/init/index.ts 与 src/navigation/components/PactModal.tsx
+ * 在启动流程里会调用它——函数内部直接返回，调用方一行都不用改，
+ * 也就不会在每次冷启动时对着 8 个上游地址打 24 个注定失败的请求。
+ */
 export const checkUpdate = async() => {
-  versionActions.setVersionInfo({ status: 'checking' })
-  let versionInfo: InitState['versionInfo'] = { ...versionState.versionInfo }
-  try {
-    const { version, desc, history } = await getVersionInfo()
-    versionInfo.newVersion = {
-      version,
-      desc,
-      history,
-    }
-  } catch (err) {
-    versionInfo.newVersion = {
-      version: '0.0.0',
-      desc: '',
-      history: [],
-    }
-  }
-  // const versionInfo = {
-  //   version: '1.9.0',
-  //   desc: '- 更新xxx\n- 修复xxx123的萨达修复xxx123的萨达修复xxx123的萨达修复xxx123的萨达修复xxx123的萨达',
-  //   history: [{ version: '1.8.0', desc: '- 更新xxx22\n- 修复xxx22' }, { version: '1.7.0', desc: '- 更新xxx22\n- 修复xxx22' }],
-  // }
-  if (versionInfo.newVersion.version == '0.0.0') {
-    versionInfo.isUnknown = true
-    versionInfo.status = 'error'
-  } else {
-    versionInfo.status = 'idle'
-    versionInfo.isUnknown = false
-    if (compareVer(versionInfo.version, versionInfo.newVersion.version) != -1) {
-      versionInfo.isLatest = true
-    }
-  }
-
-  versionActions.setVersionInfo(versionInfo)
-
-  if (!versionInfo.isLatest) {
-    if (versionInfo.isUnknown) {
-      const time = await getIgnoreVersionFailTipTime()
-      if (Date.now() - time < 7 * 86400000) return
-      saveIgnoreVersionFailTipTime(Date.now())
-      toast(global.i18n.t('version_tip_unknown'))
-    } else if (versionInfo.newVersion.version != await getIgnoreVersion()) {
-      showModal()
-    }
-  }
-  // console.log(compareVer(process.versions.app, versionInfo.version))
-  // console.log(process.versions.app, versionInfo.version)
-}
-
-export const downloadUpdate = () => {
-  versionActions.setVersionInfo({ status: 'downloading' })
-  versionActions.setProgress({ total: 0, current: 0 })
-
-  downloadNewVersion(versionState.versionInfo.newVersion!.version, (total: number, current: number) => {
-    // console.log(total, current)
-    versionActions.setProgress({ total, current })
-  }).then(() => {
-    versionActions.setVersionInfo({ status: 'downloaded' })
-  }).catch(() => {
-    versionActions.setVersionInfo({ status: 'error' })
-    // console.log(err)
+  if (versionState.versionInfo.isLatest) return
+  versionActions.setVersionInfo({
+    status: 'idle',
+    isLatest: true,
+    isUnknown: false,
+    newVersion: null,
   })
 }
 
+/**
+ * [BATCH] 站内下载已关闭，保留空导出以免调用方编译失败。
+ * 真正的下载逻辑已从 @/utils/version 移除，这里没有任何可执行的网络请求。
+ */
+export const downloadUpdate = () => {
+  // 已关闭，故意留空：任何调用都不会触发网络请求
+}
 
 export const setIgnoreVersion = (version: InitState['ignoreVersion']) => {
   versionActions.setIgnoreVersion(version)

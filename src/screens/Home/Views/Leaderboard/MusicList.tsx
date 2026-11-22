@@ -91,6 +91,7 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
     onLoadMore={handleLoadMore}
     checkHomePagerIdle
     rowType='medium'
+    downloadListName={boardState.listDetailInfo.source ? boardState.boards[boardState.listDetailInfo.source]?.list.find(board => board.id == boardState.listDetailInfo.id)?.name ?? '排行榜' : '排行榜'}
    />
 })
 

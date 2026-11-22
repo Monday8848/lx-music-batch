@@ -1,3 +1,4 @@
+import { NativeModules } from 'react-native'
 import { temporaryDirectoryPath, readDir, unlink, extname } from '@/utils/fs'
 import { readPic as _readPic } from 'react-native-local-media-metadata'
 export {
@@ -9,6 +10,15 @@ export {
   readLyric,
   writeLyric,
 } from 'react-native-local-media-metadata'
+
+/**
+ * 通知系统媒体库扫描文件，让新下载的歌曲立即出现在系统音乐/文件 App 中
+ */
+export const scanFile = async(filePath: string): Promise<string> => {
+  const mod = NativeModules.LocalMediaMetadata
+  if (!mod?.scanFile) return ''
+  return mod.scanFile(filePath)
+}
 
 let cleared = false
 const picCachePath = temporaryDirectoryPath + '/local-media-metadata'

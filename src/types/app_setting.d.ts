@@ -349,7 +349,82 @@ declare global {
       /**
        * 文件命名方式
        */
-      'download.fileName': '歌名 - 歌手' | '歌手 - 歌名' | '歌名'
+      'download.fileName': '歌名 - 歌手' | '歌手 - 歌名' | '歌名' | '自定义'
+
+      /**
+       * 自定义命名模板，支持 {歌名} {歌手} {专辑} {音轨号} {年份}
+       */
+      'download.fileNameTemplate': string
+
+      /**
+       * 默认下载音质，auto 表示按 flac24bit > flac > 320k > 128k 取最高可用
+       */
+      'download.quality': '128k' | '320k' | 'flac' | 'flac24bit' | 'auto'
+
+      /**
+       * 是否下载歌词
+       */
+      'download.isDownloadLyric': boolean
+
+      /**
+       * 是否下载翻译歌词
+       */
+      'download.isDownloadTLyric': boolean
+
+      /**
+       * 是否下载罗马音歌词
+       */
+      'download.isDownloadRLyric': boolean
+
+      /**
+       * 是否把歌词写入音频标签（否则只保存 .lrc 文件）
+       */
+      'download.isEmbedLyric': boolean
+
+      /**
+       * 是否下载封面并写入音频标签
+       */
+      'download.isDownloadPic': boolean
+
+      /**
+       * 是否写入歌曲名/歌手/专辑标签
+       */
+      'download.isWriteMetadata': boolean
+
+      /**
+       * 是否写入音轨号/年份/流派等扩展标签
+       */
+      'download.isWriteExtraMetadata': boolean
+
+      /**
+       * 已存在同名文件时是否跳过
+       */
+      'download.isSkipExist': boolean
+
+      /**
+       * 下载完成后是否通知系统媒体库扫描
+       */
+      'download.isScanMedia': boolean
+
+      /**
+       * 同时下载任务数
+       */
+      'download.concurrent': number
+
+      /**
+       * 失败重试次数
+       */
+      'download.maxRetry': number
+
+      /**
+       * 仅在 WiFi 下下载，移动网络时挂起等待
+       */
+      'download.isWifiOnly': boolean
+
+      /**
+       * 是否把下载引擎日志持久化到文件
+       */
+      'download.isSaveLog': boolean
 
       /**
        * 是否启用同步

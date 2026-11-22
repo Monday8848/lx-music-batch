@@ -98,8 +98,8 @@ def getNpmPackageJson() {
     return packageJson
 }
 def npmPackageJson = getNpmPackageJson()
-def verCode = npmPackageJson["versionCode"]
-def verName = npmPackageJson["version"]
+def verCode = npmPackageJson["versionCode"] + 5
+def verName = npmPackageJson["version"] + "-batch.7"
 def applicationName = npmPackageJson["name"]
 
 android {
@@ -110,7 +110,8 @@ android {
 
     namespace "cn.toside.music.mobile"
     defaultConfig {
-        applicationId "cn.toside.music.mobile"
+        // 共存版：与官方包名不同，可与官方版同时安装
+        applicationId "cn.toside.music.mobile.batch"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode verCode
@@ -170,15 +171,15 @@ android {
         variant.outputs.each { output ->
             // For each separate APK per architecture, set a unique version code as described here:
             // https://developer.android.com/studio/build/configure-apk-splits.html
-            // Example: versionCode 1 will generate 1001 for armeabi-v7a, 1002 for x86, etc.
-            def versionCodes = ["armeabi-v7a": 1, "x86": 2, "arm64-v8a": 3, "x86_64": 4]
             def abi = output.getFilter(OutputFile.ABI)
+            // 共存版：所有产物统一用「主版本 * 1000」作为 versionCode。
+            // 上游原本给分架构包 +1/+2/+3，universal 却保留原始 versionCode，
+            // 导致 universal 包（81）比上一版的分架构包（80003）还小，装上去会被判定为降级。
+            output.versionCodeOverride = defaultConfig.versionCode * 1000
             if (abi == null) {  // null for the universal-debug, universal-release variants
                 output.outputFileName =
                         "${applicationName}-v${defaultConfig.versionName}-universal.apk"
             } else {
-                output.versionCodeOverride =
-                        defaultConfig.versionCode * 1000 + versionCodes.get(abi)
                 output.outputFileName =
                         "${applicationName}-v${defaultConfig.versionName}-${abi}.apk"
             }

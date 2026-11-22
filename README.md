@@ -1,117 +1,224 @@
-<p align="center"><a href="https://github.com/lyswhut/lx-music-mobile"><img width="200" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/icon.png" alt="lx-music logo"></a></p>
+# LX Music 安卓改版：批量下载
 
-<h1 align="center">LX Music 移动版</h1>
+基于 [`lyswhut/lx-music-mobile`](https://github.com/lyswhut/lx-music-mobile) `v1.9.2` 源码重编译的改版，补上了官方安卓版一直空着的下载能力，并支持按歌单批量下载。
 
-<p align="center">
-  <a href="https://github.com/lyswhut/lx-music-mobile/releases"><img src="https://img.shields.io/github/release/lyswhut/lx-music-mobile" alt="Release version"></a>
-  <a href="https://github.com/lyswhut/lx-music-mobile/actions/workflows/release.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/lyswhut/lx-music-mobile/actions/workflows/beta-pack.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build%20Beta/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/lyswhut/lx-music-mobile/react-native/master" alt="React native version"></a>
-  <!-- <a href="https://github.com/lyswhut/lx-music-mobile/releases"><img src="https://img.shields.io/github/downloads/lyswhut/lx-music-mobile/latest/total" alt="Downloads"></a> -->
-  <a href="https://github.com/lyswhut/lx-music-mobile/tree/dev"><img src="https://img.shields.io/github/package-json/v/lyswhut/lx-music-mobile/dev" alt="Dev branch version"></a>
-  <!-- <a href="https://github.com/lyswhut/lx-music-mobile/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lyswhut/lx-music-mobile" alt="License"></a> -->
-</p>
+- 包名：`cn.toside.music.mobile.batch`（共存版，可与官方版同时安装）
+- 应用名：`LX Music Batch`（桌面图标显示，用于和官方版区分）
+- 版本：`1.9.2-batch.7`（versionCode 84000）
+- 最低系统：Android 5.0（API 21），targetSdk 29
+- 签名：项目自建开发证书（见 `signing/`）
 
-<p align="center">一个基于 React Native 开发的音乐软件</p>
+## 1. 功能
 
-## 说明
+### 批量下载
 
-所用技术栈：
+| 入口 | 行为 |
+|---|---|
+| 歌单详情页底部「下载全部」 | 拉取歌单全部分页后整体入队 |
+| 任意在线列表的多选栏「下载」 | 下载当前勾选的歌曲 |
+| 任意在线列表长按菜单「下载」 | 下载单曲（多选状态下作用于已选歌曲） |
+| 任意在线列表长按菜单「下载全部」 | 下载当前列表已加载的歌曲 |
+| 我的列表（含试听列表）长按菜单「下载」 | 下载其中的在线歌曲，本地歌曲自动跳过 |
 
-- React Native
-- Redux
+覆盖歌单、排行榜、搜索结果、我的列表四个页面，均复用同一套下载队列。
 
-已支持的平台：
+### 下载设置（设置 → 下载）
 
-- Android 5 及以上
+| 分组 | 设置项 |
+|---|---|
+| 音质 | `128k` / `320k` / `FLAC` / `FLAC 24bit` / `自动最高`；选中档位缺档时自动降一档 |
+| 文件命名 | `歌手 - 歌名` / `歌名 - 歌手` / `歌名` / `自定义模板` |
+| 命名模板 | 支持 `{歌名}` `{歌手}` `{专辑}` `{音轨号}` `{年份}`（也认 `{title}` `{artist}` 等英文占位符） |
+| 歌词 | 总开关；翻译歌词；罗马音歌词；写入音频标签 |
+| 封面与标签 | 下载封面；写歌名/歌手/专辑；写音轨号/年份/流派 |
+| 下载行为 | 跳过已存在文件；完成后通知系统媒体库；同时下载数 1–5；失败重试 0–3；仅 WiFi 下载 |
+| 保存目录 | `Download/LXMusic/<歌单名>/` |
+| 错误日志 | 保存日志到文件；显示已占用空间；导出到剪贴板；清空 |
 
-***注：目前没有计划支持 iOS 和 HarmonyOS NEXT**。*<br>
-*桌面版项目地址：<https://github.com/lyswhut/lx-music-desktop>*<br>
-*LX Music 项目发展调整与新项目计划：https://github.com/lyswhut/lx-music-desktop/issues/1912*
+### 下载队列
 
-软件变化请查看[更新日志](https://github.com/lyswhut/lx-music-mobile/blob/master/CHANGELOG.md)。
+- 默认同时 3 个任务、失败重试 2 次（1.5s / 3s 退避），两项均可在设置里调整；并发数改完**立即生效**，调大后新槽位马上被用起来，不用等当前任务结束。
+- 队列持久化，杀进程后重开自动恢复未完成任务。
+- 已完成文件跳过，重名自动追加 `(2)`。
+- 下载页展示当前阶段（获取地址 / 下载中百分比 / 重试 n / 写入标签）、实际音质、格式、大小、速度、错误，可全部暂停/继续、清空已完成、单条重试。
+- 页面顶部常驻调度状态（`运行 1/3 · 等待 5 · 失败 0`），暂停时变红提示；右侧「诊断」按钮一键复制引擎状态、任务详情与最近 120 条内部日志。
+- 顶部「重下失败歌词」：把所有**音频已下载完成但歌词没落地**的任务一次性补齐，不影响已下好的音频文件。
+- 顶部「重试失败」：把所有失败任务一次性重新排队，不用一条条点。音源持续报错时仍会回到失败，但省去重复点击。
+- 入队时按音质估算所需空间（128k ≈ 4 MB / 320k ≈ 10 MB / FLAC ≈ 35 MB / FLAC24 ≈ 55 MB），剩余空间不够会提示，但**不阻止入队**——你可以先排上队，清完空间再下。
+- 开启「仅 WiFi 下载」后，移动网络下调度器挂起，状态条显示橙色`等待 WiFi · 队列 N`，连回 WiFi 后 3 秒内自动继续。下载中途切到移动网络的任务会退回队列并**不消耗重试次数**，避免把重试次数浪费在没网的时候。
 
-软件下载请查看 [GitHub Releases](https://github.com/lyswhut/lx-music-mobile/releases)。
+### 错误日志
 
-使用常见问题请参阅[移动版常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq)。
+设置 → 下载 → 错误日志：
 
-目前本项目的原始发布地址只有 [**GitHub**](https://github.com/lyswhut/lx-music-mobile/releases)，其他渠道均为第三方转载发布，与本项目无关！
+| 项 | 说明 |
+|---|---|
+| 保存日志到文件 | 默认开启。日志按天写入应用私有目录 `download-logs/YYYY-MM-DD.log`，1 秒批量落盘 |
+| 轮转 | 单文件满 256 KB 自动轮转为 `.log.1`；总量超 3 MB 或超过 7 天，从最旧的开始删 |
+| 崩溃捕获 | 装了全局 `ErrorUtils` 钩子，JS 崩溃时先写一条 `FATAL`（含堆栈）再交给原处理器 |
+| 导出日志 | 读最近 400 行复制到剪贴板，直接贴给我即可定位 |
+| 清空 | 二次确认后删除全部日志文件 |
 
-为了提高使用门槛，本软件内的默认设置、UI 操作不以新手友好为目标，所以使用前建议先根据你的喜好浏览调整一遍软件设置，阅读一遍[音乐播放列表机制](https://lyswhut.github.io/lx-music-doc/mobile/faq/playlist)。
+日志格式固定为 `时间 [级别] [来源] 内容`，例如：
 
-### 数据同步服务
+```
+2026-11-15 13:02:11.482 [info] [engine] start 晴天 (running 1/3)
+2026-11-15 13:02:14.907 [error] [engine] failed 晴天 [下载文件(320k)]: 下载超时：60 秒没有收到数据 @ at downloadToFile
+```
 
-从 v1.0.0 起，我们发布了一个独立的[数据同步服务](https://github.com/lyswhut/lx-music-sync-server#readme)。如果你有服务器，可以将其部署到服务器上作为私人多端同步服务使用，详情看该项目说明。
+下载页的「诊断」按钮优先读内存日志；内存为空（刚重启）时自动退回磁盘日志，仍能看到上一次运行的现场。
 
-## 贡献代码
+### 性能
 
-本项目欢迎 PR，但为了 PR 能顺利合并，需要注意以下几点：
+这一版重点处理了几处在任务量大时才会暴露的问题：
 
-- 对于添加新功能的 PR，建议在提交 PR 前先创建 Issue 进行说明，以确认该功能是否确实需要；
-- 对于修复 bug 的 PR，请提供修复前后的说明及重现方式；
-- 对于其他类型的 PR，则适当附上说明。
+| 项 | 之前 | 现在 |
+|---|---|---|
+| 界面刷新 | 每次进度通知复制全部任务对象，`extraData` 让整片列表重渲染 | 任务带 `rev`，只有变化的任务换新对象，其余复用引用；500 首时一次进度只重绘 1~3 项 |
+| 调度查找 | `tasks.find()` 每次从数组头扫，队列长时接近 O(n²) | 环形游标从上一次位置继续，O(1) 均摊 |
+| 统计 | 四次 `filter` 遍历 | 一次遍历计数 |
+| 写盘 | 800ms 全量序列化 | 2s 节流，失败会写进日志 |
+| 列表 | 没有任何虚拟化参数 | `windowSize=7`、`maxToRenderPerBatch=8`、`initialNumToRender=12` |
 
-贡献代码步骤：
+以上改动**没有引入任何新依赖**，APK 体积基本不变（仅新增一个约 100 行的原生网络类型模块，dex 增加几 KB）。
 
-1. 参照[源码使用方法](https://lyswhut.github.io/lx-music-doc/mobile/use-source-code)设置开发环境；
-2. 克隆本仓库代码并切换至 `dev` 分支进行开发；
-3. 提交 PR 至 `dev` 分支。
+### 音质与格式策略
 
-<!--
-## 用户界面
+1. 按设置的音质档位请求；`自动最高` 的顺序是 FLAC 24bit → FLAC → 320k → 128k，逐档尝试直到拿到可用地址。
+2. 下载完成后读文件头判断**真实格式**（`ID3`/MPEG 帧同步 = MP3，`fLaC` = FLAC），按真实格式决定扩展名，**不做转码**。头部解析用纯 JS 实现，不依赖 Buffer（RN 下 `quick-base64` 的 JS 与原生版本不一致会直接抛 `undefined is not a function`）。
+3. 两种超时兜底：向音源要地址 45 秒无响应、下载中 60 秒没有新数据，都会中止并写明原因，不会再出现「一直卡在 0%」。
+4. 所有档位都失败时任务标记失败，错误原因保留在下载页。
 
-<p><img width="100%" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/app.png" alt="lx-music mobile UI"></p> -->
+### 关于本改版与更新检查
 
-## 项目协议
+设置页最底部原来的「软件更新」已改为 **「关于本改版」**：
 
-本项目基于 [Apache License 2.0](https://github.com/lyswhut/lx-music-mobile/blob/master/LICENSE) 许可证发行，以下协议是对于 Apache License 2.0 的补充，如有冲突，以以下协议为准。
+- 显示当前改版版本（`1.9.2-batch.7`）、基于的上游版本（`1.9.2`）、构建时间、设备架构、版本号
+- 列出本改版相对上游新增的能力，附致谢、非官方声明与使用声明
+- **不联网**：没有「检查更新」「立即更新」「安装」按钮，冷启动也不再请求任何版本地址
 
----
+为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.7` 判成比 `1.9.2` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
 
-*词语约定：本协议中的“本项目”指 LX Music（洛雪音乐）移动版项目；“使用者”指签署本协议的使用者；“官方音乐平台”指对本项目内置的包括酷我、酷狗、咪咕等音乐源的官方平台统称；“版权数据”指包括但不限于图像、音频、名字等在内的他人拥有所属版权的数据。*
+> 版本号从原生 `PackageManager` 读取，不写死在 JS 里；`process.versions.app` 仍保持纯上游版本号，因为 `src/utils/request.js` 用它拼 User-Agent，带 `-batch.N` 后缀有被音源服务端拒绝的风险。
 
-### 一、数据来源
+## 2. 安装
 
-1.1 本项目的各官方平台在线数据来源原理是从其公开服务器中拉取数据（与未登录状态在官方平台 APP 获取的数据相同），经过对数据简单地筛选与合并后进行展示，因此本项目不对数据的合法性、准确性负责。
+> **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
 
-1.2 本项目本身没有获取某个音频数据的能力，本项目使用的在线音频数据来源来自软件设置内“自定义源”设置所选择的“源”返回的在线链接。例如播放某首歌，本项目所做的只是将希望播放的歌曲名、艺术家等信息传递给“源”，若“源”返回了一个链接，则本项目将认为这就是该歌曲的音频数据而进行使用，至于这是不是正确的音频数据本项目无法校验其准确性，所以使用本项目的过程中可能会出现希望播放的音频与实际播放的音频不对应或者无法播放的问题。
+```bash
+adb install -r lx-music-mobile-v1.9.2-batch.7-universal.apk
+```
 
-1.3 本项目的非官方平台数据（例如“我的列表”内列表）来自使用者本地系统或者使用者连接的同步服务，本项目不对这些数据的合法性、准确性负责。
+- `universal`：通用包（含 arm64-v8a 与 armeabi-v7a），约 28 MB，不确定架构时用。
+- `arm64-v8a`：仅 64 位 ARM 手机，约 14 MB，绝大多数手机装这个。
 
-### 二、版权数据
+> 若你之前装过包名与官方相同的旧改版，那个和官方版不能共存，需要手动卸载（`adb uninstall cn.toside.music.mobile`）。本共存版不受影响。
 
-2.1 使用本项目的过程中可能会产生版权数据。对于这些版权数据，本项目不拥有它们的所有权。为了避免侵权，使用者务必在 **24 小时内** 清除使用本项目的过程中所产生的版权数据。
+两版的下载目录都是 `Download/LXMusic/`，文件放在一起；同一首歌重复下载会按 `(2)` 递增，不会互相覆盖。
 
-### 三、音乐平台别名
+## 3. 使用
 
-3.1 本项目内的官方音乐平台别名为本项目内对官方音乐平台的一个称呼，不包含恶意。如果官方音乐平台觉得不妥，可联系本项目更改或移除。
+1. 打开 App → 设置 → 基本设置 → 自定义源 → 导入你的音源脚本。
+2. 设置 → 下载：选音质档位、歌词（含翻译/罗马音）、封面与标签、命名方式、并发与重试。
+3. 进入歌单，点底部「下载全部」；或在列表里多选后点「下载」。
+4. 侧边菜单「下载」（横屏在左侧导航）查看队列与进度；任务条上会显示当前阶段，顶部一行显示调度状态，卡住时能直接看出卡在「获取地址」「重试」还是「写入标签」。
+5. 文件位于 `内部存储/Download/LXMusic/<歌单名>/`，扩展名跟随音源实际格式（`.mp3` / `.flac`）。
+6. 如果某些歌下载时歌词没拿到（音源超时、返回空、当时关了歌词开关），音频是好的、只是缺 `.lrc`：到下载页点「重下失败歌词」，会把这批任务重新拉一遍歌词，按钮上会显示 `歌词 3/10` 的进度，结束后 toast 汇总补齐几首、还差几首。判定以磁盘为准——只要同名 `.lrc` 缺失或为空就会被补，手动删掉的也能补回来；下载时没开歌词的（`skip`）不会被翻旧账。
 
-### 四、资源使用
+## 4. 构建
 
-4.1 本项目内使用的部分包括但不限于字体、图片等资源来源于互联网。如果出现侵权可联系本项目移除。
+```bash
+# 环境：JDK 17+、Android SDK 36、NDK 26.1.10909125、Node 18+
+npm install --legacy-peer-deps
+node dependencies-patch.js          # 补原生标签库（音轨号/年份/流派、媒体扫描）+ 清理 quick-base64 版本冲突
+cd android
+./gradlew assembleRelease
+```
 
-### 五、免责声明
+> `dependencies-patch.js` 修改 `node_modules/react-native-local-media-metadata` 的两个 Java 文件（「写扩展标签」「下载完扫描媒体库」的前提），并删除 `@craftzdog/react-native-buffer` 里嵌套的 `quick-base64@3`（它与原生链接的 v2 不兼容，会让任何 base64 运算抛 `undefined is not a function`）。`package.json` 的 `overrides` 已固化这条规则，重新 `npm install` 也不会复发。
 
-5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。
+签名配置在 `android/keystore.properties`：
 
-### 六、使用限制
+```properties
+storeFile=lxmusic-batch.keystore
+storePassword=<你的签名口令>
+keyAlias=lxmusic
+keyPassword=<你的签名口令>
+```
 
-6.1 本项目完全免费，且开源发布于 GitHub 面向全世界人用作对技术的学习交流。本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。
+> `keystore.properties` 含签名口令，已列在 `.gitignore` 中，**不要提交、不要随源码分发**。口令只保存在你本地。
 
-6.2 **禁止在违反当地法律法规的情况下使用本项目。** 对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。
+`signing/lxmusic-batch.keystore` 是本次构建使用的开发证书。只有使用同一证书签名，后续版本才能覆盖安装本次 APK；正式分发请替换为你自己的证书。
 
-### 七、版权保护
+源码改动见 `patch/lx-music-batch.patch`（71 个文件），应用到 v1.9.2 源码：
 
-7.1 音乐平台不易，请尊重版权，支持正版。
+```bash
+patch -p1 -E < patch/lx-music-batch.patch   # -E 用于删除被替换的旧占位文件
+cp signing/lxmusic-batch.keystore android/app/
+```
 
-### 八、非商业性质
+补丁不含二进制证书与构建产物，因此证书要单独拷贝到 `android/app/`，`android/keystore.properties` 里已指向该文件名。
 
-8.1 本项目仅用于对技术可行性的探索及研究，不接受任何商业（包括但不限于广告等）合作及捐赠。
+### 跟进上游新版本
 
-### 九、接受协议
+本改版定位是「跟着官方更新走」。每次上游发新版，按下面走一遍：
 
-9.1 若你使用了本项目，即代表你接受本协议。
+| 步骤 | 操作 |
+|---|---|
+| 1 | 合并上游新源码，重点确认 `src/utils/version.js`、`src/core/version.ts`、`src/screens/Home/Views/Setting/settings/Version.tsx`、`src/navigation/components/VersionModal.tsx` 这四个被我们改过的文件有没有被官方改动 |
+| 2 | `package.json` 的 `version` / `versionCode` 会随上游变，**不要手改** |
+| 3 | `android/app/build.gradle`：把 `-batch.N` 改成新基线的 `-batch.1`（同一基线上再修 bug 才递增到 `.2`），并把 `npmPackageJson["versionCode"] + N` 同步 +1，保证 versionCode 严格递增，否则覆盖安装会被判降级 |
+| 4 | 用**同一个** `signing/lxmusic-batch.keystore` 签名，换证书会装不上 |
+| 5 | 若特性列表变了，同步改 `src/lang/{zh-cn,zh-tw,en-us}.json` 的 `about_*` 键；`about_credit` 的 `{ver}` 自动取 `package.json`，不用改 |
+| 6 | 跑 `node test/build-version.mjs && node test/version-guard.mjs`（9 项回归），再 `./gradlew assembleRelease` |
 
----
+版本号规则：新上游基线从 `batch.1` 重置（如 `1.9.3-batch.1`），同基线修补为 `batch.2`，版本号自带「基于哪个上游」的信息。
 
-若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
+所有改版相关代码都带 `// [BATCH]` 标记，合并上游时用 `grep -rn "\[BATCH\]" src/ android/app/src/main/java` 就能列出全部需人工确认的位置，改动刻意收敛在少数几个文件里，避免每次跟进都产生大面积冲突。
+
+## 5. 排查
+
+### 5.1 任务一直显示「等待中」（v3 已修）
+
+| 缺陷 | 表现 | 修复 |
+|---|---|---|
+| 列表项 `memo` 比较的是同一个被原地修改的任务对象 | 实际在下载甚至已完成，界面永远停在「等待中」 | 每次通知返回任务快照 |
+| 重试时把状态改回 `waiting`，在退避等待期间被调度器再次取走 | 同一任务并行多份，并发槽被占满，新任务永久排队 | 重试内联执行，状态全程保持 `downloading`，并加在途集合与计数自愈 |
+
+### 5.2 报错 `undefined is not a function`（v4 已修）
+
+`@craftzdog/react-native-buffer@6` 依赖 `quick-base64@^3`，npm 装了一份嵌套的 v3，而 Gradle 只链接了工程顶层的 v2.2.2。v3 的 JS 走 TurboModule 的 `base64ToArrayBuffer`，v2 的原生模块只有 `install()`，于是**每次读文件头判断格式都会抛 `undefined is not a function`**——文件其实已经下完，只是在这一步被扔掉。
+
+修复：格式识别改成纯 JS 的 `base64ToBytes()`（零依赖），同时删掉嵌套的 v3 并在 `package.json` 用 `overrides` 固化。详见 `TEST-REPORT.md` 第 9 节。
+
+### 5.3 任务失败时怎么反馈
+
+错误信息现在带出错步骤前缀，例如：
+
+```
+[获取下载地址(128k)] 音源未返回下载地址
+[识别格式] undefined is not a function
+```
+
+点下载页的**「诊断」**按钮，把复制到的内容发我。里面包含：
+
+- 引擎是否初始化、是否处于暂停、在途数与并发上限、在途任务 id
+- 每个任务的状态、期望音质→实际音质、阶段、重试次数、进度、错误原文
+- 最近 120 条引擎内部日志（启动、入队、调度、重试、失败原因）
+
+歌词补不回来时，日志里会有 `lyric <歌名>: <原因>` 一行，带上它就能判断是音源没这首的歌词，还是网络超时。
+
+## 6. 已知限制
+
+- **没有断点续传**：`react-native-fs` 的 Android 下载不提供 Range 续传能力，当前实现为失败后整首重试，已完成文件跳过。若需要严格续传，需要新增原生下载模块。
+- **后台下载能力有限**：下载在应用进程内执行，没有独立前台服务。切后台短时间可继续，长时间可能被系统挂起；重新打开 App 会自动恢复队列。
+- **公共目录写入**：依赖 targetSdk 29 的 legacy storage。首次下载会申请一次存储权限；若机型仍拒绝写入 `Download/LXMusic`，会自动回退到应用私有目录并在任务里写明实际路径。
+- **不内置音源**：音源脚本需自行导入，下载能力仅限你有权获取的内容。
+- **音源决定上限**：能否下到 FLAC、有没有翻译/罗马音歌词，取决于音源返回什么，设置只是决定「要什么」。
+- **应用内更新已关闭**：改版随上游手动跟进，App 不联网检查版本，也不下载任何安装包；新版本请回来取 APK 覆盖安装（设置 → 关于本改版 可查当前批次）。
+- **深链冲突**：官方版与共存版都注册 `lxmusic://`，点这类链接时系统会让你选择用哪个应用打开。
+- **未在真机验证**：模拟器与自动化测试结果见 `TEST-REPORT.md`，国产 ROM 的存储/后台差异仍需真机确认。
+
+## 7. 校验
+
+`apk/SHA256SUMS.txt` 记录了 APK 的 SHA-256。
