@@ -1,0 +1,34 @@
+LX Music Batch
+Copyright 2026 LX Music Batch contributors
+
+This product is a modified version of "lx-music-mobile" v1.9.2
+(https://github.com/lyswhut/lx-music-mobile), Copyright lyswhut,
+licensed under the Apache License, Version 2.0.
+
+Modifications relative to the upstream source (all marked with a
+"[BATCH]" comment in the corresponding files):
+
+  * applicationId changed to cn.toside.music.mobile.batch so this build
+    can coexist with the official app; app name set to "LX Music Batch"
+  * batch download queue covering playlist / rank / search / my-list,
+    with persistent state and resume
+  * download settings: quality tier, filename template, lyrics, cover,
+    tags, concurrency, retry count, Wi-Fi-only mode, storage pre-check
+  * download page controls: pause all, clear finished, retry failed,
+    re-download failed lyrics, diagnostics dump
+  * file error logging under download-logs/ with rotation and export
+  * performance changes: incremental task notification, ring-cursor
+    scheduling, single-pass statistics, throttled persistence,
+    FlatList virtualization
+  * in-app update check disabled; "About this build" screen added
+  * small native modules for network type and app info
+
+The full diff against upstream v1.9.2 is provided in
+docs/lx-music-batch.patch.
+
+This modified build is NOT affiliated with, endorsed by, or supported by
+the original author. Please do not report issues of this build to the
+upstream repository.
+
+Licensed under the Apache License, Version 2.0. See LICENSE for the full
+license text.

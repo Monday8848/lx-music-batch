@@ -1,12 +1,14 @@
 # LX Music 安卓改版：批量下载
 
-基于 [`lyswhut/lx-music-mobile`](https://github.com/lyswhut/lx-music-mobile) `v1.9.2` 源码重编译的改版，补上了官方安卓版一直空着的下载能力，并支持按歌单批量下载。
+> **非官方改版。** 本项目基于 [`lyswhut/lx-music-mobile`](https://github.com/lyswhut/lx-music-mobile) `v1.9.2`（Apache-2.0）修改，与原作者无隶属关系、未获其背书；本改版的问题请勿提交到上游仓库。修改说明见 `NOTICE`，相对上游的完整差异见 `docs/lx-music-batch.patch`。
+
+基于官方 `v1.9.2` 源码重编译，补上了官方安卓版一直空着的下载能力，并支持按歌单批量下载。
 
 - 包名：`cn.toside.music.mobile.batch`（共存版，可与官方版同时安装）
 - 应用名：`LX Music Batch`（桌面图标显示，用于和官方版区分）
 - 版本：`1.9.2-batch.7`（versionCode 84000）
 - 最低系统：Android 5.0（API 21），targetSdk 29
-- 签名：项目自建开发证书（见 `signing/`）
+- 签名：需自备证书，配置方法见 §4 构建（`keystore.properties` 不入库）
 
 ## 1. 功能
 
