@@ -99,7 +99,7 @@ def getNpmPackageJson() {
 }
 def npmPackageJson = getNpmPackageJson()
 def verCode = npmPackageJson["versionCode"] + 5
-def verName = npmPackageJson["version"] + "-batch.7"
+def verName = npmPackageJson["version"] + "-batch.1"
 def applicationName = npmPackageJson["name"]
 
 android {

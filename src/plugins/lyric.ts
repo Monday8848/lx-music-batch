@@ -24,7 +24,7 @@ const lrcTools = {
     this.lrc = new Lyric({
       onPlay: this.onPlay.bind(this),
       onSetLyric: this.onSetLyric.bind(this),
-      offset: 100, // offset time(ms), default is 150 ms
+      globalOffset: 100, // 全局偏移(ms)；lrc-file-parser 2.5.0 起构造参数由 offset 改为 globalOffset
     })
   },
   onPlay(line: number, text: string) {

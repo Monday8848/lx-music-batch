@@ -29,11 +29,12 @@ import {
 const root = process.env.TEST_DOWNLOAD_DIR!
 const listDir = path.join(root, 'Download', 'LXMusic', '测试歌单')
 
-const musicBase = {
+const musicBase: any = {
   source: 'kw',
   interval: '04:29',
   meta: {
     songId: '228908',
+    copyrightId: '60054701923',
     albumName: '叶惠美',
     picUrl: null,
     qualitys: [],

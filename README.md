@@ -1,14 +1,14 @@
 # LX Music 安卓改版：批量下载
 
-> **非官方改版。** 本项目基于 [`lyswhut/lx-music-mobile`](https://github.com/lyswhut/lx-music-mobile) `v1.9.2`（Apache-2.0）修改，与原作者无隶属关系、未获其背书；本改版的问题请勿提交到上游仓库。修改说明见 `NOTICE`，相对上游的完整差异见 `docs/lx-music-batch.patch`。
+> **非官方改版。** 本项目基于 [`lyswhut/lx-music-mobile`](https://github.com/lyswhut/lx-music-mobile) `v1.9.3`（Apache-2.0）修改，与原作者无隶属关系、未获其背书；本改版的问题请勿提交到上游仓库。修改说明见 `NOTICE`，相对上游的完整差异见 `docs/lx-music-batch.patch`。
 
 > **AI 生成说明。** 本改版的代码修改、文档、测试脚本与构建发布流程均由 AI 生成，人工复核后发布。功能可用性、与具体机型/音源的兼容性不做保证，请自行评估后使用；下载内容请确保你有权获取。
 
-基于官方 `v1.9.2` 源码重编译，补上了官方安卓版一直空着的下载能力，并支持按歌单批量下载。
+基于官方 `v1.9.3` 源码重编译，补上了官方安卓版一直空着的下载能力，并支持按歌单批量下载。
 
 - 包名：`cn.toside.music.mobile.batch`（共存版，可与官方版同时安装）
 - 应用名：`LX Music Batch`（桌面图标显示，用于和官方版区分）
-- 版本：`1.9.2-batch.7`（versionCode 84000）
+- 版本：`1.9.3-batch.1`（versionCode 85000）
 - 最低系统：Android 5.0（API 21），targetSdk 29
 - 签名：需自备证书，配置方法见 §4 构建（`keystore.properties` 不入库）
 
@@ -97,11 +97,11 @@
 
 设置页最底部原来的「软件更新」已改为 **「关于本改版」**：
 
-- 显示当前改版版本（`1.9.2-batch.7`）、基于的上游版本（`1.9.2`）、构建时间、设备架构、版本号
+- 显示当前改版版本（`1.9.3-batch.1`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
 - 列出本改版相对上游新增的能力，附致谢、非官方声明与使用声明
 - **不联网**：没有「检查更新」「立即更新」「安装」按钮，冷启动也不再请求任何版本地址
 
-为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.7` 判成比 `1.9.2` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
+为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.1` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
 
 > 版本号从原生 `PackageManager` 读取，不写死在 JS 里；`process.versions.app` 仍保持纯上游版本号，因为 `src/utils/request.js` 用它拼 User-Agent，带 `-batch.N` 后缀有被音源服务端拒绝的风险。
 
@@ -110,7 +110,7 @@
 > **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
 
 ```bash
-adb install -r lx-music-mobile-v1.9.2-batch.7-universal.apk
+adb install -r lx-music-mobile-v1.9.3-batch.1-universal.apk
 ```
 
 - `universal`：通用包（含 arm64-v8a 与 armeabi-v7a），约 28 MB，不确定架构时用。
@@ -154,7 +154,7 @@ keyPassword=<你的签名口令>
 
 `signing/lxmusic-batch.keystore` 是本次构建使用的开发证书。只有使用同一证书签名，后续版本才能覆盖安装本次 APK；正式分发请替换为你自己的证书。
 
-源码改动见 `patch/lx-music-batch.patch`（71 个文件），应用到 v1.9.2 源码：
+源码改动见 `patch/lx-music-batch.patch`（71 个文件），应用到 v1.9.3 源码：
 
 ```bash
 patch -p1 -E < patch/lx-music-batch.patch   # -E 用于删除被替换的旧占位文件

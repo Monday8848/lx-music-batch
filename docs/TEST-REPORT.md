@@ -1,13 +1,13 @@
-# 测试报告：LX Music 批量下载共存版（v7 更新检查改造）
+# 测试报告：LX Music 批量下载共存版（v8 · 上游 1.9.3）
 
 | 项 | 值 |
 |---|---|
-| 被测产物 | `lx-music-mobile-v1.9.2-batch.7-{arm64-v8a,universal}.apk` |
+| 被测产物 | `lx-music-mobile-v1.9.3-batch.1-{arm64-v8a,universal}.apk` |
 | 包名 / 应用名 | `cn.toside.music.mobile.batch` / `LX Music Batch` |
-| 版本 | `1.9.2-batch.7`（versionCode 84000） |
-| 基线源码 | `lyswhut/lx-music-mobile` v1.9.2 |
+| 版本 | `1.9.3-batch.1`（versionCode 85000） |
+| 基线源码 | `lyswhut/lx-music-mobile` v1.9.3 |
 | 签名 | 自建证书 `CN=LXMusicBatch, OU=Dev, O=Dev, L=Beijing, ST=Beijing, C=CN` |
-| 测试时间 | 2026-11-14 ~ 11-15 |
+| 测试时间 | 2026-11-14 ~ 11-15（v1~v7）；2026-11-28（v8 跟进复验） |
 
 ## 0. 结论
 
@@ -493,3 +493,49 @@ return file.mkdir(name).buildFileInfo();
 ### 12.5 结论
 
 更新检查在**代码层**被切断，不是靠界面隐藏按钮：任何调用路径都拿不到上游版本信息、也下不到上游 APK。设置页语义从「软件更新」改为「关于本改版」，版本号与构建信息由原生读取、跟版时无需改 JS。改动收敛在少数文件并带 `// [BATCH]` 标记，便于后续跟进上游合并。
+
+## 13. v8：跟进上游 1.9.3
+
+| 项 | 值 |
+|---|---|
+| 被测产物 | `lx-music-mobile-v1.9.3-batch.1-{arm64-v8a,universal}.apk` |
+| 版本 | `1.9.3-batch.1`（versionCode 85000，可覆盖 84000） |
+| 基线 | 上游 v1.9.3（2026-11-28 发布），v1.9.2 基线停用 |
+| 上游改动 | 9 提交 / 12 文件：歌词时间标签解析修复、音频卸载默认禁用（可在设置中手动开启）、wy 歌单加载修复、`lrc-file-parser` 2.4.2 → 2.5.0、`react-native-track-player` 换提交 |
+| 合并方式 | 上游 1.9.2→1.9.3 的 unified diff 直接应用到改版树，12 文件零冲突；改版 8 处主干改动未被上游触及 |
+
+### 13.1 为兼容新依赖追加的适配
+
+| 文件 | 改动 | 原因 |
+|---|---|---|
+| `src/plugins/lyric.ts` | 构造参数 `offset: 100` → `globalOffset: 100` | `lrc-file-parser` 2.5.0 移除了 `offset` 选项，保留原值会让歌词偏移从 100ms 静默变成 0 |
+| `test/harness.ts` | 夹具补 `copyrightId`，`musicBase` 放宽为 `any` | 上游给咪咕 `MusicInfo_mg` 增加了必填 `copyrightId`，测试脚手架类型不匹配 |
+| `android/app/build.gradle` | `-batch.7` → `-batch.1` | 新基线重置改版序号 |
+| `package.json` | 上游已改 `version 1.9.3` / `versionCode 80` | 联动 versionCode =（80+5）×1000 = 85000 |
+
+> `react-native-track-player` 是 GitHub 提交依赖，首次 `npm install` 未真正替换（目录时间戳仍是旧版），需删目录重装；重装后 `MusicManager.java` 才出现 `AUDIO_OFFLOAD_MODE_ENABLED : AUDIO_OFFLOAD_MODE_DISABLED` 的条件分支。
+
+### 13.2 验证结果
+
+| 项 | 结果 |
+|---|---|
+| 补丁应用 | 上游 diff 的 12 文件全部 `git apply --check` 通过；`package-lock.json` 有 1131 行偏移（改版 overrides 所致），仍应用成功 |
+| `npx tsc --noEmit`（改动文件） | 0 错误（含 8 个上游改动文件、`batch.ts`、`lyric.ts`、`harness.ts`）；全项目剩 5 处上游既有 player/类型错误，与本次无关 |
+| `npx eslint`（8 个改动文件） | 0 问题 |
+| `node test/version-guard.mjs` | **9/9 通过**（更新检查仍被完全切断，UA 版本号来源未变） |
+| 依赖版本 | `lrc-file-parser` 2.5.0、`react-native-track-player` commit `755501d` |
+| Gradle `assembleRelease` | BUILD SUCCESSFUL（首次 2m33s，替换播放器后重编 41s） |
+| APK 元数据 | 包名 `cn.toside.music.mobile.batch`、versionName `1.9.3-batch.1`、versionCode `85000`、应用名 `LX Music Batch`、arm64 包 `native-code: arm64-v8a` |
+| APK 内 bundle 静态检查 | `raw.githubusercontent` / `lx-music-mobile-version-info` / `cdn.stsky.cn` / `jsdelivr` 命中 **0** |
+| 补丁 | 84 文件、401 KB，`patch -p1 -E --dry-run` 在干净 v1.9.3 源码上退出码 0 |
+| 产物校验 | `sha256sum -c SHA256SUMS.txt` 两个包均 OK |
+
+### 13.3 未覆盖
+
+- 真机验收四项（真实下载落盘、FLAC 后缀、仅 WiFi 阻断、错误日志导出）仍未执行，v7 遗留至今。
+- 歌词 100ms 偏移改动只做了类型与代码层核对，未在真机上听感验证。
+- 音频卸载默认关闭后的实际播放表现（长时间后台播放、切歌）未测。
+
+### 13.4 结论
+
+上游 1.9.3 与改版的改动面完全不重叠，跟进成本只有「应用 12 文件 diff + 改一行 batch 号」，没有合并冲突。唯一需要人工判断的是 `lrc-file-parser` 2.5.0 的构造参数改名——上游自己没适配，照抄会让歌词偏移失效，已在改版侧修正。
