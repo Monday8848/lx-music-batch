@@ -623,5 +623,10 @@
   "download_retry_lyric_none": "All downloaded songs already have lyrics",
   "download_retry_lyric_done": "Lyrics restored for {ok} song(s)",
   "download_retry_lyric_partial": "{ok} restored, {fail} still missing lyrics",
-  "download_retry_lyric_disabled": "Lyric download is off. Enable it in Settings - Download"
+  "download_retry_lyric_disabled": "Lyric download is off. Enable it in Settings - Download",
+  "user_api_update_alert_btn_update": "Update now",
+  "user_api_is_auto_update": "Auto-update sources",
+  "user_api_auto_update_success": "\"{name}\" updated to {version}, restart the app to take effect",
+  "user_api_auto_update_failed": "Failed to auto-update \"{name}\": {message}",
+  "user_api_auto_update_invalid_script": "The downloaded content is not a valid source script"
 }

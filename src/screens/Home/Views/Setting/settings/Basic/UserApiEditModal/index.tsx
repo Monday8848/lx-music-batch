@@ -6,6 +6,9 @@ import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import Dialog, { type DialogType } from '@/components/common/Dialog'
 import Button from '@/components/common/Button'
+import { updateSetting } from '@/core/common'
+import { useSettingValue } from '@/store/setting/hook'
+import CheckBoxItem from '../../../components/CheckBoxItem'
 import List from './List'
 import ImportBtn from './ImportBtn'
 
@@ -68,6 +71,12 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
   const [visible, setVisible] = useState(false)
   const theme = useTheme()
   const t = useI18n()
+  const isAutoUpdate = useSettingValue('userApi.isAutoUpdate')
+  const setIsAutoUpdate = (enable: boolean) => {
+    updateSetting({ 'userApi.isAutoUpdate': enable })
+    // 原生事件层靠这个标记决定是否放行更新事件
+    global.lx.isAutoUpdateUserApi = enable
+  }
 
   const handleShow = () => {
     dialogRef.current?.setVisible(true)
@@ -107,6 +116,9 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
               {/* <UrlInput ref={inputRef} /> */}
               <Text size={16} style={styles.title}>{t('user_api_title')}</Text>
               <List />
+              <View style={styles.checkBox}>
+                <CheckBoxItem check={isAutoUpdate} label={t('user_api_is_auto_update')} onChange={setIsAutoUpdate} />
+              </View>
               <View style={styles.tips}>
                 <Text style={styles.tipsText} size={12}>
                   {t('user_api_readme')}
@@ -144,6 +156,9 @@ const styles = createStyle({
     marginBottom: 15,
     textAlign: 'center',
     // backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  checkBox: {
+    marginTop: 10,
   },
   tips: {
     paddingHorizontal: 7,

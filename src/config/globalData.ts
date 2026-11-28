@@ -46,6 +46,8 @@ global.lx = {
 
   isEnableSyncLog: false,
   isEnableUserApiLog: false,
+  // 自定义源自动更新：命中时跳过更新弹窗，直接下载覆盖脚本
+  isAutoUpdateUserApi: false,
 
   playerTrackId: '',
 

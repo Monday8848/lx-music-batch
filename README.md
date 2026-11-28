@@ -8,7 +8,7 @@
 
 - 包名：`cn.toside.music.mobile.batch`（共存版，可与官方版同时安装）
 - 应用名：`LX Music Batch`（桌面图标显示，用于和官方版区分）
-- 版本：`1.9.3-batch.1`（versionCode 85000）
+- 版本：`1.9.3-batch.2`（versionCode 85001）
 - 最低系统：Android 5.0（API 21），targetSdk 29
 - 签名：需自备证书，配置方法见 §4 构建（`keystore.properties` 不入库）
 
@@ -97,20 +97,31 @@
 
 设置页最底部原来的「软件更新」已改为 **「关于本改版」**：
 
-- 显示当前改版版本（`1.9.3-batch.1`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
+- 显示当前改版版本（`1.9.3-batch.2`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
 - 列出本改版相对上游新增的能力，附致谢、非官方声明与使用声明
 - **不联网**：没有「检查更新」「立即更新」「安装」按钮，冷启动也不再请求任何版本地址
 
-为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.1` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
+为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.2` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
 
 > 版本号从原生 `PackageManager` 读取，不写死在 JS 里；`process.versions.app` 仍保持纯上游版本号，因为 `src/utils/request.js` 用它拼 User-Agent，带 `-batch.N` 后缀有被音源服务端拒绝的风险。
+
+### 音源自动更新
+
+官方版遇到自定义源发来的更新提示，只能弹窗跳系统浏览器下载脚本，再回 App 手动导入。本改版把这一步收进应用内：
+
+- **弹窗改为「立即更新」**：确认后由 App 自己下载 `updateUrl` 指向的脚本，校验文件头后覆盖同名源，不再跳浏览器
+- **静默自动更新**：设置 → 基本设置 → 自定义源 → 勾选「自动更新音源」，检测到新版本直接下载覆盖，只弹一条结果提示
+- 覆盖按脚本头部的 `@name` 匹配；找不到同名源时退化为新增一条，不会误删其他源
+- 新脚本在下次启动或切换音源后生效，不打断正在播放的歌
+
+> 服务端修的接口问题（例如某个平台歌单打不开）不需要换脚本；脚本版本号对齐后，更新提示会自动消失。
 
 ## 2. 安装
 
 > **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
 
 ```bash
-adb install -r lx-music-mobile-v1.9.3-batch.1-universal.apk
+adb install -r lx-music-mobile-v1.9.3-batch.2-universal.apk
 ```
 
 - `universal`：通用包（含 arm64-v8a 与 armeabi-v7a），约 28 MB，不确定架构时用。

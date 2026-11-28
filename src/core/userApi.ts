@@ -1,5 +1,5 @@
 import { action, state } from '@/store/userApi'
-import { addUserApi, getUserApiScript, removeUserApi as removeUserApiFromStore, setUserApiAllowShowUpdateAlert as setUserApiAllowShowUpdateAlertFromStore } from '@/utils/data'
+import { addUserApi, getUserApiList, getUserApiScript, removeUserApi as removeUserApiFromStore, setUserApiAllowShowUpdateAlert as setUserApiAllowShowUpdateAlertFromStore, updateUserApi as updateUserApiFromStore } from '@/utils/data'
 import { destroy, loadScript } from '@/utils/nativeModules/userApi'
 import { log as writeLog } from '@/utils/log'
 
@@ -30,6 +30,16 @@ export const setUserApiList: typeof action['setUserApiList'] = (list) => {
 export const importUserApi = async(script: string) => {
   const info = await addUserApi(script)
   action.addUserApi(info)
+}
+
+/**
+ * 用新脚本覆盖同名自定义源，并刷新列表。
+ * 只写存储与状态，不重启 JS 线程，新脚本在下次启动或切换源后生效。
+ */
+export const updateUserApiByScript = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
+  const info = await updateUserApiFromStore(script)
+  action.setUserApiList(await getUserApiList())
+  return info
 }
 
 export const removeUserApi = async(ids: string[]) => {

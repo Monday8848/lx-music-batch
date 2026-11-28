@@ -1,13 +1,15 @@
 import { type InitParams, onScriptAction, sendAction, type ResponseParams, type UpdateInfoParams, type RequestParams } from '@/utils/nativeModules/userApi'
-import { log, setUserApiList, setUserApiStatus } from '@/core/userApi'
+import { log, setUserApiList, setUserApiStatus, updateUserApiByScript } from '@/core/userApi'
 import settingState from '@/store/setting/state'
 import BackgroundTimer from 'react-native-background-timer'
 import { fetchData } from './request'
 import { getUserApiList } from '@/utils/data'
-import { confirmDialog, openUrl, tipDialog } from '@/utils/tools'
+import { confirmDialog, tipDialog } from '@/utils/tools'
 
 
 export default async(setting: LX.AppSetting) => {
+  // 启动时同步自动更新开关，供原生事件层判断是否放行更新事件
+  global.lx.isAutoUpdateUserApi = setting['userApi.isAutoUpdate']
   const userApiRequestMap = new Map<string, { resolve: (value: ResponseParams['result']) => void, reject: (error: Error) => void, timeout: number }>()
   const scriptRequestMap = new Map<string, { request: Promise<any>, abort: () => void }>()
 
@@ -189,27 +191,51 @@ export default async(setting: LX.AppSetting) => {
     }
     if (!global.lx.apiInitPromise[1]) global.lx.apiInitPromise[2](status)
   }
-  const showUpdateAlert = ({ name, log, updateUrl }: UpdateInfoParams) => {
-    if (updateUrl) {
-      void confirmDialog({
-        message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
-        // selection: true,
-        // showCancel: true,
-        confirmButtonText: global.i18n.t('user_api_update_alert_open_url'),
-        cancelButtonText: global.i18n.t('close'),
-      }).then(confirm => {
-        if (!confirm) return
-        setTimeout(() => {
-          void openUrl(updateUrl)
-        }, 300)
+  // 下载更新地址指向的脚本并覆盖同名源；不重启 JS 线程，新脚本下次启动生效
+  const downloadAndReplace = async(updateUrl: string) => {
+    const script = await fetchData(updateUrl, { method: 'get' }).request.then(resp => resp.body) as string
+    if (typeof script !== 'string' || !/^\/\*[\S|\s]+?\*\//.test(script)) {
+      throw new Error(global.i18n.t('user_api_auto_update_invalid_script'))
+    }
+    return updateUserApiByScript(script)
+  }
+  const handleUpdate = (name: string, updateUrl: string) => {
+    void downloadAndReplace(updateUrl).then(info => {
+      void tipDialog({
+        message: global.i18n.t('user_api_auto_update_success', { name: info.name, version: info.version }),
+        btnText: global.i18n.t('ok'),
       })
-    } else {
+    }).catch((error: any) => {
+      void tipDialog({
+        message: global.i18n.t('user_api_auto_update_failed', { name, message: error?.message ?? String(error) }),
+        btnText: global.i18n.t('ok'),
+      })
+    })
+  }
+  const showUpdateAlert = ({ name, log, updateUrl }: UpdateInfoParams) => {
+    if (!updateUrl) {
       void tipDialog({
         message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
         // selection: true,
         btnText: global.i18n.t('ok'),
       })
+      return
     }
+    // 开启自动更新后不再弹窗，直接下载覆盖
+    if (global.lx.isAutoUpdateUserApi) {
+      handleUpdate(name, updateUrl)
+      return
+    }
+    void confirmDialog({
+      message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
+      // selection: true,
+      // showCancel: true,
+      confirmButtonText: global.i18n.t('user_api_update_alert_btn_update'),
+      cancelButtonText: global.i18n.t('close'),
+    }).then(confirm => {
+      if (!confirm) return
+      handleUpdate(name, updateUrl)
+    })
   }
 
   onScriptAction((event) => {

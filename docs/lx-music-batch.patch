@@ -66,10 +66,10 @@ index 0000000..1390b01
 +Licensed under the Apache License, Version 2.0. See LICENSE for the full
 +license text.
 diff --git a/README.md b/README.md
-index eeca084..ac99e99 100644
+index eeca084..645119d 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,117 +1,228 @@
+@@ -1,117 +1,239 @@
 -<p align="center"><a href="https://github.com/lyswhut/lx-music-mobile"><img width="200" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/icon.png" alt="lx-music logo"></a></p>
 +# LX Music 安卓改版：批量下载
  
@@ -93,7 +93,7 @@ index eeca084..ac99e99 100644
 -## 说明
 +- 包名：`cn.toside.music.mobile.batch`（共存版，可与官方版同时安装）
 +- 应用名：`LX Music Batch`（桌面图标显示，用于和官方版区分）
-+- 版本：`1.9.3-batch.1`（versionCode 85000）
++- 版本：`1.9.3-batch.2`（versionCode 85001）
 +- 最低系统：Android 5.0（API 21），targetSdk 29
 +- 签名：需自备证书，配置方法见 §4 构建（`keystore.properties` 不入库）
  
@@ -213,41 +213,56 @@ index eeca084..ac99e99 100644
 +设置页最底部原来的「软件更新」已改为 **「关于本改版」**：
  
 -*词语约定：本协议中的“本项目”指 LX Music（洛雪音乐）移动版项目；“使用者”指签署本协议的使用者；“官方音乐平台”指对本项目内置的包括酷我、酷狗、咪咕等音乐源的官方平台统称；“版权数据”指包括但不限于图像、音频、名字等在内的他人拥有所属版权的数据。*
-+- 显示当前改版版本（`1.9.3-batch.1`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
++- 显示当前改版版本（`1.9.3-batch.2`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
 +- 列出本改版相对上游新增的能力，附致谢、非官方声明与使用声明
 +- **不联网**：没有「检查更新」「立即更新」「安装」按钮，冷启动也不再请求任何版本地址
  
 -### 一、数据来源
-+为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.1` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
++为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.2` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
  
 -1.1 本项目的各官方平台在线数据来源原理是从其公开服务器中拉取数据（与未登录状态在官方平台 APP 获取的数据相同），经过对数据简单地筛选与合并后进行展示，因此本项目不对数据的合法性、准确性负责。
 +> 版本号从原生 `PackageManager` 读取，不写死在 JS 里；`process.versions.app` 仍保持纯上游版本号，因为 `src/utils/request.js` 用它拼 User-Agent，带 `-batch.N` 后缀有被音源服务端拒绝的风险。
  
 -1.2 本项目本身没有获取某个音频数据的能力，本项目使用的在线音频数据来源来自软件设置内“自定义源”设置所选择的“源”返回的在线链接。例如播放某首歌，本项目所做的只是将希望播放的歌曲名、艺术家等信息传递给“源”，若“源”返回了一个链接，则本项目将认为这就是该歌曲的音频数据而进行使用，至于这是不是正确的音频数据本项目无法校验其准确性，所以使用本项目的过程中可能会出现希望播放的音频与实际播放的音频不对应或者无法播放的问题。
-+## 2. 安装
++### 音源自动更新
  
 -1.3 本项目的非官方平台数据（例如“我的列表”内列表）来自使用者本地系统或者使用者连接的同步服务，本项目不对这些数据的合法性、准确性负责。
-+> **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
++官方版遇到自定义源发来的更新提示，只能弹窗跳系统浏览器下载脚本，再回 App 手动导入。本改版把这一步收进应用内：
  
 -### 二、版权数据
-+```bash
-+adb install -r lx-music-mobile-v1.9.3-batch.1-universal.apk
-+```
++- **弹窗改为「立即更新」**：确认后由 App 自己下载 `updateUrl` 指向的脚本，校验文件头后覆盖同名源，不再跳浏览器
++- **静默自动更新**：设置 → 基本设置 → 自定义源 → 勾选「自动更新音源」，检测到新版本直接下载覆盖，只弹一条结果提示
++- 覆盖按脚本头部的 `@name` 匹配；找不到同名源时退化为新增一条，不会误删其他源
++- 新脚本在下次启动或切换音源后生效，不打断正在播放的歌
  
 -2.1 使用本项目的过程中可能会产生版权数据。对于这些版权数据，本项目不拥有它们的所有权。为了避免侵权，使用者务必在 **24 小时内** 清除使用本项目的过程中所产生的版权数据。
++> 服务端修的接口问题（例如某个平台歌单打不开）不需要换脚本；脚本版本号对齐后，更新提示会自动消失。
+ 
+-### 三、音乐平台别名
++## 2. 安装
+ 
+-3.1 本项目内的官方音乐平台别名为本项目内对官方音乐平台的一个称呼，不包含恶意。如果官方音乐平台觉得不妥，可联系本项目更改或移除。
++> **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
+ 
+-### 四、资源使用
++```bash
++adb install -r lx-music-mobile-v1.9.3-batch.2-universal.apk
++```
+ 
+-4.1 本项目内使用的部分包括但不限于字体、图片等资源来源于互联网。如果出现侵权可联系本项目移除。
 +- `universal`：通用包（含 arm64-v8a 与 armeabi-v7a），约 28 MB，不确定架构时用。
 +- `arm64-v8a`：仅 64 位 ARM 手机，约 14 MB，绝大多数手机装这个。
  
--### 三、音乐平台别名
+-### 五、免责声明
 +> 若你之前装过包名与官方相同的旧改版，那个和官方版不能共存，需要手动卸载（`adb uninstall cn.toside.music.mobile`）。本共存版不受影响。
  
--3.1 本项目内的官方音乐平台别名为本项目内对官方音乐平台的一个称呼，不包含恶意。如果官方音乐平台觉得不妥，可联系本项目更改或移除。
+-5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。
 +两版的下载目录都是 `Download/LXMusic/`，文件放在一起；同一首歌重复下载会按 `(2)` 递增，不会互相覆盖。
  
--### 四、资源使用
+-### 六、使用限制
 +## 3. 使用
  
--4.1 本项目内使用的部分包括但不限于字体、图片等资源来源于互联网。如果出现侵权可联系本项目移除。
+-6.1 本项目完全免费，且开源发布于 GitHub 面向全世界人用作对技术的学习交流。本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。
 +1. 打开 App → 设置 → 基本设置 → 自定义源 → 导入你的音源脚本。
 +2. 设置 → 下载：选音质档位、歌词（含翻译/罗马音）、封面与标签、命名方式、并发与重试。
 +3. 进入歌单，点底部「下载全部」；或在列表里多选后点「下载」。
@@ -255,10 +270,10 @@ index eeca084..ac99e99 100644
 +5. 文件位于 `内部存储/Download/LXMusic/<歌单名>/`，扩展名跟随音源实际格式（`.mp3` / `.flac`）。
 +6. 如果某些歌下载时歌词没拿到（音源超时、返回空、当时关了歌词开关），音频是好的、只是缺 `.lrc`：到下载页点「重下失败歌词」，会把这批任务重新拉一遍歌词，按钮上会显示 `歌词 3/10` 的进度，结束后 toast 汇总补齐几首、还差几首。判定以磁盘为准——只要同名 `.lrc` 缺失或为空就会被补，手动删掉的也能补回来；下载时没开歌词的（`skip`）不会被翻旧账。
  
--### 五、免责声明
+-6.2 **禁止在违反当地法律法规的情况下使用本项目。** 对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。
 +## 4. 构建
  
--5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。
+-### 七、版权保护
 +```bash
 +# 环境：JDK 17+、Android SDK 36、NDK 26.1.10909125、Node 18+
 +npm install --legacy-peer-deps
@@ -267,13 +282,13 @@ index eeca084..ac99e99 100644
 +./gradlew assembleRelease
 +```
  
--### 六、使用限制
+-7.1 音乐平台不易，请尊重版权，支持正版。
 +> `dependencies-patch.js` 修改 `node_modules/react-native-local-media-metadata` 的两个 Java 文件（「写扩展标签」「下载完扫描媒体库」的前提），并删除 `@craftzdog/react-native-buffer` 里嵌套的 `quick-base64@3`（它与原生链接的 v2 不兼容，会让任何 base64 运算抛 `undefined is not a function`）。`package.json` 的 `overrides` 已固化这条规则，重新 `npm install` 也不会复发。
  
--6.1 本项目完全免费，且开源发布于 GitHub 面向全世界人用作对技术的学习交流。本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。
+-### 八、非商业性质
 +签名配置在 `android/keystore.properties`：
  
--6.2 **禁止在违反当地法律法规的情况下使用本项目。** 对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。
+-8.1 本项目仅用于对技术可行性的探索及研究，不接受任何商业（包括但不限于广告等）合作及捐赠。
 +```properties
 +storeFile=lxmusic-batch.keystore
 +storePassword=<你的签名口令>
@@ -281,31 +296,27 @@ index eeca084..ac99e99 100644
 +keyPassword=<你的签名口令>
 +```
  
--### 七、版权保护
+-### 九、接受协议
 +> `keystore.properties` 含签名口令，已列在 `.gitignore` 中，**不要提交、不要随源码分发**。口令只保存在你本地。
  
--7.1 音乐平台不易，请尊重版权，支持正版。
+-9.1 若你使用了本项目，即代表你接受本协议。
 +`signing/lxmusic-batch.keystore` 是本次构建使用的开发证书。只有使用同一证书签名，后续版本才能覆盖安装本次 APK；正式分发请替换为你自己的证书。
  
--### 八、非商业性质
+----
 +源码改动见 `patch/lx-music-batch.patch`（71 个文件），应用到 v1.9.3 源码：
  
--8.1 本项目仅用于对技术可行性的探索及研究，不接受任何商业（包括但不限于广告等）合作及捐赠。
+-若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
 +```bash
 +patch -p1 -E < patch/lx-music-batch.patch   # -E 用于删除被替换的旧占位文件
 +cp signing/lxmusic-batch.keystore android/app/
 +```
- 
--### 九、接受协议
++
 +补丁不含二进制证书与构建产物，因此证书要单独拷贝到 `android/app/`，`android/keystore.properties` 里已指向该文件名。
- 
--9.1 若你使用了本项目，即代表你接受本协议。
++
 +### 跟进上游新版本
- 
-----
++
 +本改版定位是「跟着官方更新走」。每次上游发新版，按下面走一遍：
- 
--若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
++
 +| 步骤 | 操作 |
 +|---|---|
 +| 1 | 合并上游新源码，重点确认 `src/utils/version.js`、`src/core/version.ts`、`src/screens/Home/Views/Setting/settings/Version.tsx`、`src/navigation/components/VersionModal.tsx` 这四个被我们改过的文件有没有被官方改动 |
@@ -366,21 +377,23 @@ index eeca084..ac99e99 100644
 +
 +`apk/SHA256SUMS.txt` 记录了 APK 的 SHA-256。
 diff --git a/android/app/build.gradle b/android/app/build.gradle
-index a7f3b7d..08d87f4 100644
+index a7f3b7d..1197930 100644
 --- a/android/app/build.gradle
 +++ b/android/app/build.gradle
-@@ -98,8 +98,8 @@ def getNpmPackageJson() {
+@@ -98,8 +98,10 @@ def getNpmPackageJson() {
      return packageJson
  }
  def npmPackageJson = getNpmPackageJson()
 -def verCode = npmPackageJson["versionCode"]
 -def verName = npmPackageJson["version"]
++// 改版序号：同一上游基线上每次迭代递增，versionCode 同步 +1，保证可覆盖安装
++def batchIndex = 2
 +def verCode = npmPackageJson["versionCode"] + 5
-+def verName = npmPackageJson["version"] + "-batch.1"
++def verName = npmPackageJson["version"] + "-batch.${batchIndex}"
  def applicationName = npmPackageJson["name"]
  
  android {
-@@ -110,7 +110,8 @@ android {
+@@ -110,7 +112,8 @@ android {
  
      namespace "cn.toside.music.mobile"
      defaultConfig {
@@ -390,7 +403,7 @@ index a7f3b7d..08d87f4 100644
          minSdkVersion rootProject.ext.minSdkVersion
          targetSdkVersion rootProject.ext.targetSdkVersion
          versionCode verCode
-@@ -170,15 +171,15 @@ android {
+@@ -170,15 +173,15 @@ android {
          variant.outputs.each { output ->
              // For each separate APK per architecture, set a unique version code as described here:
              // https://developer.android.com/studio/build/configure-apk-splits.html
@@ -400,7 +413,7 @@ index a7f3b7d..08d87f4 100644
 +            // 共存版：所有产物统一用「主版本 * 1000」作为 versionCode。
 +            // 上游原本给分架构包 +1/+2/+3，universal 却保留原始 versionCode，
 +            // 导致 universal 包（81）比上一版的分架构包（80003）还小，装上去会被判定为降级。
-+            output.versionCodeOverride = defaultConfig.versionCode * 1000
++            output.versionCodeOverride = defaultConfig.versionCode * 1000 + (batchIndex - 1)
              if (abi == null) {  // null for the universal-debug, universal-release variants
                  output.outputFileName =
                          "${applicationName}-v${defaultConfig.versionName}-universal.apk"
@@ -791,20 +804,20 @@ index bacca9d..427271d 100644
  
 diff --git a/docs/TEST-REPORT.md b/docs/TEST-REPORT.md
 new file mode 100644
-index 0000000..16621bb
+index 0000000..adef8be
 --- /dev/null
 +++ b/docs/TEST-REPORT.md
-@@ -0,0 +1,495 @@
-+# 测试报告：LX Music 批量下载共存版（v7 更新检查改造）
+@@ -0,0 +1,585 @@
++# 测试报告：LX Music 批量下载共存版（v8 · 上游 1.9.3）
 +
 +| 项 | 值 |
 +|---|---|
-+| 被测产物 | `lx-music-mobile-v1.9.2-batch.7-{arm64-v8a,universal}.apk` |
++| 被测产物 | `lx-music-mobile-v1.9.3-batch.1-{arm64-v8a,universal}.apk` |
 +| 包名 / 应用名 | `cn.toside.music.mobile.batch` / `LX Music Batch` |
-+| 版本 | `1.9.2-batch.7`（versionCode 84000） |
-+| 基线源码 | `lyswhut/lx-music-mobile` v1.9.2 |
++| 版本 | `1.9.3-batch.1`（versionCode 85000） |
++| 基线源码 | `lyswhut/lx-music-mobile` v1.9.3 |
 +| 签名 | 自建证书 `CN=LXMusicBatch, OU=Dev, O=Dev, L=Beijing, ST=Beijing, C=CN` |
-+| 测试时间 | 2026-11-14 ~ 11-15 |
++| 测试时间 | 2026-11-14 ~ 11-15（v1~v7）；2026-11-28（v8 跟进复验） |
 +
 +## 0. 结论
 +
@@ -1290,12 +1303,102 @@ index 0000000..16621bb
 +### 12.5 结论
 +
 +更新检查在**代码层**被切断，不是靠界面隐藏按钮：任何调用路径都拿不到上游版本信息、也下不到上游 APK。设置页语义从「软件更新」改为「关于本改版」，版本号与构建信息由原生读取、跟版时无需改 JS。改动收敛在少数文件并带 `// [BATCH]` 标记，便于后续跟进上游合并。
++
++## 13. v8：跟进上游 1.9.3
++
++| 项 | 值 |
++|---|---|
++| 被测产物 | `lx-music-mobile-v1.9.3-batch.1-{arm64-v8a,universal}.apk` |
++| 版本 | `1.9.3-batch.1`（versionCode 85000，可覆盖 84000） |
++| 基线 | 上游 v1.9.3（2026-11-28 发布），v1.9.2 基线停用 |
++| 上游改动 | 9 提交 / 12 文件：歌词时间标签解析修复、音频卸载默认禁用（可在设置中手动开启）、wy 歌单加载修复、`lrc-file-parser` 2.4.2 → 2.5.0、`react-native-track-player` 换提交 |
++| 合并方式 | 上游 1.9.2→1.9.3 的 unified diff 直接应用到改版树，12 文件零冲突；改版 8 处主干改动未被上游触及 |
++
++### 13.1 为兼容新依赖追加的适配
++
++| 文件 | 改动 | 原因 |
++|---|---|---|
++| `src/plugins/lyric.ts` | 构造参数 `offset: 100` → `globalOffset: 100` | `lrc-file-parser` 2.5.0 移除了 `offset` 选项，保留原值会让歌词偏移从 100ms 静默变成 0 |
++| `test/harness.ts` | 夹具补 `copyrightId`，`musicBase` 放宽为 `any` | 上游给咪咕 `MusicInfo_mg` 增加了必填 `copyrightId`，测试脚手架类型不匹配 |
++| `android/app/build.gradle` | `-batch.7` → `-batch.1` | 新基线重置改版序号 |
++| `package.json` | 上游已改 `version 1.9.3` / `versionCode 80` | 联动 versionCode =（80+5）×1000 = 85000 |
++
++> `react-native-track-player` 是 GitHub 提交依赖，首次 `npm install` 未真正替换（目录时间戳仍是旧版），需删目录重装；重装后 `MusicManager.java` 才出现 `AUDIO_OFFLOAD_MODE_ENABLED : AUDIO_OFFLOAD_MODE_DISABLED` 的条件分支。
++
++### 13.2 验证结果
++
++| 项 | 结果 |
++|---|---|
++| 补丁应用 | 上游 diff 的 12 文件全部 `git apply --check` 通过；`package-lock.json` 有 1131 行偏移（改版 overrides 所致），仍应用成功 |
++| `npx tsc --noEmit`（改动文件） | 0 错误（含 8 个上游改动文件、`batch.ts`、`lyric.ts`、`harness.ts`）；全项目剩 5 处上游既有 player/类型错误，与本次无关 |
++| `npx eslint`（8 个改动文件） | 0 问题 |
++| `node test/version-guard.mjs` | **9/9 通过**（更新检查仍被完全切断，UA 版本号来源未变） |
++| 依赖版本 | `lrc-file-parser` 2.5.0、`react-native-track-player` commit `755501d` |
++| Gradle `assembleRelease` | BUILD SUCCESSFUL（首次 2m33s，替换播放器后重编 41s） |
++| APK 元数据 | 包名 `cn.toside.music.mobile.batch`、versionName `1.9.3-batch.1`、versionCode `85000`、应用名 `LX Music Batch`、arm64 包 `native-code: arm64-v8a` |
++| APK 内 bundle 静态检查 | `raw.githubusercontent` / `lx-music-mobile-version-info` / `cdn.stsky.cn` / `jsdelivr` 命中 **0** |
++| 补丁 | 84 文件、401 KB，`patch -p1 -E --dry-run` 在干净 v1.9.3 源码上退出码 0 |
++| 产物校验 | `sha256sum -c SHA256SUMS.txt` 两个包均 OK |
++
++### 13.3 未覆盖
++
++- 真机验收四项（真实下载落盘、FLAC 后缀、仅 WiFi 阻断、错误日志导出）仍未执行，v7 遗留至今。
++- 歌词 100ms 偏移改动只做了类型与代码层核对，未在真机上听感验证。
++- 音频卸载默认关闭后的实际播放表现（长时间后台播放、切歌）未测。
++
++### 13.4 结论
++
++上游 1.9.3 与改版的改动面完全不重叠，跟进成本只有「应用 12 文件 diff + 改一行 batch 号」，没有合并冲突。唯一需要人工判断的是 `lrc-file-parser` 2.5.0 的构造参数改名——上游自己没适配，照抄会让歌词偏移失效，已在改版侧修正。
++
++## 14. v9：自定义源自动更新（1.9.3-batch.2）
++
++| 项 | 值 |
++|---|---|
++| 被测产物 | `lx-music-mobile-v1.9.3-batch.2-{arm64-v8a,universal}.apk` |
++| 版本 | `1.9.3-batch.2`（versionCode 85001，可覆盖 85000） |
++| 基线 | 上游 v1.9.3；本次改动只在本改版，不涉及上游合并 |
++
++### 14.1 改动内容
++
++| 文件 | 改动 |
++|---|---|
++| `src/utils/data.ts` | 新增 `updateUserApi(script)`：按脚本头 `@name` 匹配已有源，覆盖脚本全文并同步 version/description/author；无同名源时退化为新增 |
++| `src/core/userApi.ts` | 新增 `updateUserApiByScript(script)`：写存储后刷新源列表，不重启 QuickJS 线程 |
++| `src/core/init/userApi/index.ts` | 更新提示改为应用内下载：`fetchData(updateUrl)` → 校验 `/*! ... */` 文件头 → 覆盖同名源 → 提示重启生效；开关打开时跳过弹窗直接更新 |
++| `src/utils/nativeModules/userApi.ts` | `UpdateInfoParams` 增加 `id`（由 `loadScriptInfo` 注入）；关闭了 `allowShowUpdateAlert` 但开启自动更新时仍放行事件 |
++| `src/config/defaultSetting.ts`、`src/types/app_setting.d.ts` | 新增设置 `userApi.isAutoUpdate`，默认 `false` |
++| `src/config/globalData.ts`、`src/types/app.d.ts` | 新增运行时标记 `isAutoUpdateUserApi`，供原生事件层判断 |
++| `UserApiEditModal/index.tsx` | 自定义源管理弹窗底部新增「自动更新音源」勾选项 |
++| 三语 `lang/*.json` | 新增 5 个键：立即更新、自动更新音源、成功、失败、无效脚本 |
++| `android/app/build.gradle` | 引入 `batchIndex`，versionCode = 主版本 × 1000 + (batchIndex - 1) |
++
++### 14.2 验证结果
++
++| 项 | 结果 |
++|---|---|
++| `npx tsc --noEmit` | 改动文件 0 错误；全项目剩 5 处上游既有错误（player/类型），与本次无关 |
++| `npx eslint`（9 个源文件） | 0 问题 |
++| `node test/version-guard.mjs` | **9/9 通过**（App 自身更新检查仍被切断，未受影响） |
++| Gradle `assembleRelease` | BUILD SUCCESSFUL，2m 8s |
++| APK 元数据 | 包名 `cn.toside.music.mobile.batch`、versionName `1.9.3-batch.2`、versionCode `85001`、应用名 `LX Music Batch`、arm64 包 `native-code: arm64-v8a` |
++| bundle 静态检查 | `user_api_is_auto_update`、`user_api_auto_update_success`、`user_api_update_alert_btn_update` 均在包内；中文「自动更新音源」「已更新到」「立即更新」按 UTF-16LE 命中 |
++| 产物校验 | `sha256sum -c SHA256SUMS.txt` 两个包均 OK |
++
++### 14.3 未覆盖
++
++- 真机未验证：未实际跑通「服务端发新版 → App 内下载覆盖 → 重启生效」的完整链路；无 KVM，模拟器跑不稳该流程。
++- 覆盖按 `@name` 匹配。若音源作者在新版里改了名称（例如续期后过期时间变化），会被判为新源而不是覆盖。此边界已知，未做兼容。
++- 自动更新只替换脚本文件、不重启 JS 线程，更新后当前会话仍用旧脚本，需重启或切换音源。
++
++### 14.4 结论
++
++官方版的更新提示只能跳浏览器，本改版把下载、校验、覆盖三步收进应用内，并额外提供静默自动更新开关。改动集中在自定义源初始化与存储层，不触碰播放、下载与界面主流程，回归结果与上一版一致。
 diff --git a/docs/lx-music-batch.patch b/docs/lx-music-batch.patch
 new file mode 100644
-index 0000000..9b3cc04
+index 0000000..55184a8
 --- /dev/null
 +++ b/docs/lx-music-batch.patch
-@@ -0,0 +1,1286 @@
+@@ -0,0 +1,1391 @@
 +diff --git a/.gitignore b/.gitignore
 +index 4c71049..459451d 100644
 +--- a/.gitignore
@@ -1364,10 +1467,10 @@ index 0000000..9b3cc04
 ++Licensed under the Apache License, Version 2.0. See LICENSE for the full
 ++license text.
 +diff --git a/README.md b/README.md
-+index eeca084..ac99e99 100644
++index eeca084..645119d 100644
 +--- a/README.md
 ++++ b/README.md
-+@@ -1,117 +1,228 @@
++@@ -1,117 +1,239 @@
 +-<p align="center"><a href="https://github.com/lyswhut/lx-music-mobile"><img width="200" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/icon.png" alt="lx-music logo"></a></p>
 ++# LX Music 安卓改版：批量下载
 + 
@@ -1391,7 +1494,7 @@ index 0000000..9b3cc04
 +-## 说明
 ++- 包名：`cn.toside.music.mobile.batch`（共存版，可与官方版同时安装）
 ++- 应用名：`LX Music Batch`（桌面图标显示，用于和官方版区分）
-++- 版本：`1.9.3-batch.1`（versionCode 85000）
+++- 版本：`1.9.3-batch.2`（versionCode 85001）
 ++- 最低系统：Android 5.0（API 21），targetSdk 29
 ++- 签名：需自备证书，配置方法见 §4 构建（`keystore.properties` 不入库）
 + 
@@ -1511,41 +1614,56 @@ index 0000000..9b3cc04
 ++设置页最底部原来的「软件更新」已改为 **「关于本改版」**：
 + 
 +-*词语约定：本协议中的“本项目”指 LX Music（洛雪音乐）移动版项目；“使用者”指签署本协议的使用者；“官方音乐平台”指对本项目内置的包括酷我、酷狗、咪咕等音乐源的官方平台统称；“版权数据”指包括但不限于图像、音频、名字等在内的他人拥有所属版权的数据。*
-++- 显示当前改版版本（`1.9.3-batch.1`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
+++- 显示当前改版版本（`1.9.3-batch.2`）、基于的上游版本（`1.9.3`）、构建时间、设备架构、版本号
 ++- 列出本改版相对上游新增的能力，附致谢、非官方声明与使用声明
 ++- **不联网**：没有「检查更新」「立即更新」「安装」按钮，冷启动也不再请求任何版本地址
 + 
 +-### 一、数据来源
-++为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.1` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
+++为什么要改：原版会读 `lyswhut/lx-music-mobile/publish/version.json`，发现上游发新版就弹窗并从官方 Releases 下载 APK。上游包名 `cn.toside.music.mobile`、签名都与本改版不同，装上去**不会覆盖，而是并存成第二个 LX Music**；`compareVer` 又会把 `-batch.2` 判成比 `1.9.3` 更低，容易反复误报。现在更新检查在代码层被切断：`getVersionInfo` / `downloadNewVersion` / `updateApp` 一律抛 `UPDATE_CHECK_DISABLED`，`checkUpdate` 直接短路，任何界面路径都下不到官方包；`src` 内已无任何官方更新源地址。
 + 
 +-1.1 本项目的各官方平台在线数据来源原理是从其公开服务器中拉取数据（与未登录状态在官方平台 APP 获取的数据相同），经过对数据简单地筛选与合并后进行展示，因此本项目不对数据的合法性、准确性负责。
 ++> 版本号从原生 `PackageManager` 读取，不写死在 JS 里；`process.versions.app` 仍保持纯上游版本号，因为 `src/utils/request.js` 用它拼 User-Agent，带 `-batch.N` 后缀有被音源服务端拒绝的风险。
 + 
 +-1.2 本项目本身没有获取某个音频数据的能力，本项目使用的在线音频数据来源来自软件设置内“自定义源”设置所选择的“源”返回的在线链接。例如播放某首歌，本项目所做的只是将希望播放的歌曲名、艺术家等信息传递给“源”，若“源”返回了一个链接，则本项目将认为这就是该歌曲的音频数据而进行使用，至于这是不是正确的音频数据本项目无法校验其准确性，所以使用本项目的过程中可能会出现希望播放的音频与实际播放的音频不对应或者无法播放的问题。
-++## 2. 安装
+++### 音源自动更新
 + 
 +-1.3 本项目的非官方平台数据（例如“我的列表”内列表）来自使用者本地系统或者使用者连接的同步服务，本项目不对这些数据的合法性、准确性负责。
-++> **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
+++官方版遇到自定义源发来的更新提示，只能弹窗跳系统浏览器下载脚本，再回 App 手动导入。本改版把这一步收进应用内：
 + 
 +-### 二、版权数据
-++```bash
-++adb install -r lx-music-mobile-v1.9.3-batch.1-universal.apk
-++```
+++- **弹窗改为「立即更新」**：确认后由 App 自己下载 `updateUrl` 指向的脚本，校验文件头后覆盖同名源，不再跳浏览器
+++- **静默自动更新**：设置 → 基本设置 → 自定义源 → 勾选「自动更新音源」，检测到新版本直接下载覆盖，只弹一条结果提示
+++- 覆盖按脚本头部的 `@name` 匹配；找不到同名源时退化为新增一条，不会误删其他源
+++- 新脚本在下次启动或切换音源后生效，不打断正在播放的歌
 + 
 +-2.1 使用本项目的过程中可能会产生版权数据。对于这些版权数据，本项目不拥有它们的所有权。为了避免侵权，使用者务必在 **24 小时内** 清除使用本项目的过程中所产生的版权数据。
+++> 服务端修的接口问题（例如某个平台歌单打不开）不需要换脚本；脚本版本号对齐后，更新提示会自动消失。
++ 
++-### 三、音乐平台别名
+++## 2. 安装
++ 
++-3.1 本项目内的官方音乐平台别名为本项目内对官方音乐平台的一个称呼，不包含恶意。如果官方音乐平台觉得不妥，可联系本项目更改或移除。
+++> **共存版**：包名 `cn.toside.music.mobile.batch`，与官方 `cn.toside.music.mobile` 不同，**可以直接和官方 LX Music 一起装**，不用卸载官方版。两边的设置、歌单、下载队列、登录状态完全隔离。
++ 
++-### 四、资源使用
+++```bash
+++adb install -r lx-music-mobile-v1.9.3-batch.2-universal.apk
+++```
++ 
++-4.1 本项目内使用的部分包括但不限于字体、图片等资源来源于互联网。如果出现侵权可联系本项目移除。
 ++- `universal`：通用包（含 arm64-v8a 与 armeabi-v7a），约 28 MB，不确定架构时用。
 ++- `arm64-v8a`：仅 64 位 ARM 手机，约 14 MB，绝大多数手机装这个。
 + 
-+-### 三、音乐平台别名
++-### 五、免责声明
 ++> 若你之前装过包名与官方相同的旧改版，那个和官方版不能共存，需要手动卸载（`adb uninstall cn.toside.music.mobile`）。本共存版不受影响。
 + 
-+-3.1 本项目内的官方音乐平台别名为本项目内对官方音乐平台的一个称呼，不包含恶意。如果官方音乐平台觉得不妥，可联系本项目更改或移除。
++-5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。
 ++两版的下载目录都是 `Download/LXMusic/`，文件放在一起；同一首歌重复下载会按 `(2)` 递增，不会互相覆盖。
 + 
-+-### 四、资源使用
++-### 六、使用限制
 ++## 3. 使用
 + 
-+-4.1 本项目内使用的部分包括但不限于字体、图片等资源来源于互联网。如果出现侵权可联系本项目移除。
++-6.1 本项目完全免费，且开源发布于 GitHub 面向全世界人用作对技术的学习交流。本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。
 ++1. 打开 App → 设置 → 基本设置 → 自定义源 → 导入你的音源脚本。
 ++2. 设置 → 下载：选音质档位、歌词（含翻译/罗马音）、封面与标签、命名方式、并发与重试。
 ++3. 进入歌单，点底部「下载全部」；或在列表里多选后点「下载」。
@@ -1553,10 +1671,10 @@ index 0000000..9b3cc04
 ++5. 文件位于 `内部存储/Download/LXMusic/<歌单名>/`，扩展名跟随音源实际格式（`.mp3` / `.flac`）。
 ++6. 如果某些歌下载时歌词没拿到（音源超时、返回空、当时关了歌词开关），音频是好的、只是缺 `.lrc`：到下载页点「重下失败歌词」，会把这批任务重新拉一遍歌词，按钮上会显示 `歌词 3/10` 的进度，结束后 toast 汇总补齐几首、还差几首。判定以磁盘为准——只要同名 `.lrc` 缺失或为空就会被补，手动删掉的也能补回来；下载时没开歌词的（`skip`）不会被翻旧账。
 + 
-+-### 五、免责声明
++-6.2 **禁止在违反当地法律法规的情况下使用本项目。** 对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。
 ++## 4. 构建
 + 
-+-5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。
++-### 七、版权保护
 ++```bash
 ++# 环境：JDK 17+、Android SDK 36、NDK 26.1.10909125、Node 18+
 ++npm install --legacy-peer-deps
@@ -1565,13 +1683,13 @@ index 0000000..9b3cc04
 ++./gradlew assembleRelease
 ++```
 + 
-+-### 六、使用限制
++-7.1 音乐平台不易，请尊重版权，支持正版。
 ++> `dependencies-patch.js` 修改 `node_modules/react-native-local-media-metadata` 的两个 Java 文件（「写扩展标签」「下载完扫描媒体库」的前提），并删除 `@craftzdog/react-native-buffer` 里嵌套的 `quick-base64@3`（它与原生链接的 v2 不兼容，会让任何 base64 运算抛 `undefined is not a function`）。`package.json` 的 `overrides` 已固化这条规则，重新 `npm install` 也不会复发。
 + 
-+-6.1 本项目完全免费，且开源发布于 GitHub 面向全世界人用作对技术的学习交流。本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。
++-### 八、非商业性质
 ++签名配置在 `android/keystore.properties`：
 + 
-+-6.2 **禁止在违反当地法律法规的情况下使用本项目。** 对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。
++-8.1 本项目仅用于对技术可行性的探索及研究，不接受任何商业（包括但不限于广告等）合作及捐赠。
 ++```properties
 ++storeFile=lxmusic-batch.keystore
 ++storePassword=<你的签名口令>
@@ -1579,31 +1697,27 @@ index 0000000..9b3cc04
 ++keyPassword=<你的签名口令>
 ++```
 + 
-+-### 七、版权保护
++-### 九、接受协议
 ++> `keystore.properties` 含签名口令，已列在 `.gitignore` 中，**不要提交、不要随源码分发**。口令只保存在你本地。
 + 
-+-7.1 音乐平台不易，请尊重版权，支持正版。
++-9.1 若你使用了本项目，即代表你接受本协议。
 ++`signing/lxmusic-batch.keystore` 是本次构建使用的开发证书。只有使用同一证书签名，后续版本才能覆盖安装本次 APK；正式分发请替换为你自己的证书。
 + 
-+-### 八、非商业性质
++----
 ++源码改动见 `patch/lx-music-batch.patch`（71 个文件），应用到 v1.9.3 源码：
 + 
-+-8.1 本项目仅用于对技术可行性的探索及研究，不接受任何商业（包括但不限于广告等）合作及捐赠。
++-若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
 ++```bash
 ++patch -p1 -E < patch/lx-music-batch.patch   # -E 用于删除被替换的旧占位文件
 ++cp signing/lxmusic-batch.keystore android/app/
 ++```
-+ 
-+-### 九、接受协议
+++
 ++补丁不含二进制证书与构建产物，因此证书要单独拷贝到 `android/app/`，`android/keystore.properties` 里已指向该文件名。
-+ 
-+-9.1 若你使用了本项目，即代表你接受本协议。
+++
 ++### 跟进上游新版本
-+ 
-+----
+++
 ++本改版定位是「跟着官方更新走」。每次上游发新版，按下面走一遍：
-+ 
-+-若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
+++
 ++| 步骤 | 操作 |
 ++|---|---|
 ++| 1 | 合并上游新源码，重点确认 `src/utils/version.js`、`src/core/version.ts`、`src/screens/Home/Views/Setting/settings/Version.tsx`、`src/navigation/components/VersionModal.tsx` 这四个被我们改过的文件有没有被官方改动 |
@@ -1664,21 +1778,23 @@ index 0000000..9b3cc04
 ++
 ++`apk/SHA256SUMS.txt` 记录了 APK 的 SHA-256。
 +diff --git a/android/app/build.gradle b/android/app/build.gradle
-+index a7f3b7d..08d87f4 100644
++index a7f3b7d..1197930 100644
 +--- a/android/app/build.gradle
 ++++ b/android/app/build.gradle
-+@@ -98,8 +98,8 @@ def getNpmPackageJson() {
++@@ -98,8 +98,10 @@ def getNpmPackageJson() {
 +     return packageJson
 + }
 + def npmPackageJson = getNpmPackageJson()
 +-def verCode = npmPackageJson["versionCode"]
 +-def verName = npmPackageJson["version"]
+++// 改版序号：同一上游基线上每次迭代递增，versionCode 同步 +1，保证可覆盖安装
+++def batchIndex = 2
 ++def verCode = npmPackageJson["versionCode"] + 5
-++def verName = npmPackageJson["version"] + "-batch.1"
+++def verName = npmPackageJson["version"] + "-batch.${batchIndex}"
 + def applicationName = npmPackageJson["name"]
 + 
 + android {
-+@@ -110,7 +110,8 @@ android {
++@@ -110,7 +112,8 @@ android {
 + 
 +     namespace "cn.toside.music.mobile"
 +     defaultConfig {
@@ -1688,7 +1804,7 @@ index 0000000..9b3cc04
 +         minSdkVersion rootProject.ext.minSdkVersion
 +         targetSdkVersion rootProject.ext.targetSdkVersion
 +         versionCode verCode
-+@@ -170,15 +171,15 @@ android {
++@@ -170,15 +173,15 @@ android {
 +         variant.outputs.each { output ->
 +             // For each separate APK per architecture, set a unique version code as described here:
 +             // https://developer.android.com/studio/build/configure-apk-splits.html
@@ -1698,7 +1814,7 @@ index 0000000..9b3cc04
 ++            // 共存版：所有产物统一用「主版本 * 1000」作为 versionCode。
 ++            // 上游原本给分架构包 +1/+2/+3，universal 却保留原始 versionCode，
 ++            // 导致 universal 包（81）比上一版的分架构包（80003）还小，装上去会被判定为降级。
-++            output.versionCodeOverride = defaultConfig.versionCode * 1000
+++            output.versionCodeOverride = defaultConfig.versionCode * 1000 + (batchIndex - 1)
 +             if (abi == null) {  // null for the universal-debug, universal-release variants
 +                 output.outputFileName =
 +                         "${applicationName}-v${defaultConfig.versionName}-universal.apk"
@@ -2089,20 +2205,20 @@ index 0000000..9b3cc04
 + 
 +diff --git a/docs/TEST-REPORT.md b/docs/TEST-REPORT.md
 +new file mode 100644
-+index 0000000..16621bb
++index 0000000..adef8be
 +--- /dev/null
 ++++ b/docs/TEST-REPORT.md
-+@@ -0,0 +1,495 @@
-++# 测试报告：LX Music 批量下载共存版（v7 更新检查改造）
++@@ -0,0 +1,585 @@
+++# 测试报告：LX Music 批量下载共存版（v8 · 上游 1.9.3）
 ++
 ++| 项 | 值 |
 ++|---|---|
-++| 被测产物 | `lx-music-mobile-v1.9.2-batch.7-{arm64-v8a,universal}.apk` |
+++| 被测产物 | `lx-music-mobile-v1.9.3-batch.1-{arm64-v8a,universal}.apk` |
 ++| 包名 / 应用名 | `cn.toside.music.mobile.batch` / `LX Music Batch` |
-++| 版本 | `1.9.2-batch.7`（versionCode 84000） |
-++| 基线源码 | `lyswhut/lx-music-mobile` v1.9.2 |
+++| 版本 | `1.9.3-batch.1`（versionCode 85000） |
+++| 基线源码 | `lyswhut/lx-music-mobile` v1.9.3 |
 ++| 签名 | 自建证书 `CN=LXMusicBatch, OU=Dev, O=Dev, L=Beijing, ST=Beijing, C=CN` |
-++| 测试时间 | 2026-11-14 ~ 11-15 |
+++| 测试时间 | 2026-11-14 ~ 11-15（v1~v7）；2026-11-28（v8 跟进复验） |
 ++
 ++## 0. 结论
 ++
@@ -2582,6 +2698,98 @@ index 0000000..9b3cc04
 ++### 12.4 未覆盖
 ++
 ++- **模拟器 UI 截图未取得**：无 `/dev/kvm`，TCG 模式模拟器在本轮安装完成后掉线（`adb: no devices/emulators found`），设置页与「关于本改版」弹窗的布局未能截图确认。v6 也曾因 System UI ANR 未拿到设置页截图。
+++- **真机覆盖安装**：versionCode 84000 > 83000 且签名未变，理论可直接 `adb install -r`；真机实际覆盖仍待确认。
+++- **离线启动耗时**：代码路径上已无网络请求，但真机 logcat 抓包未做。
+++
+++### 12.5 结论
+++
+++更新检查在**代码层**被切断，不是靠界面隐藏按钮：任何调用路径都拿不到上游版本信息、也下不到上游 APK。设置页语义从「软件更新」改为「关于本改版」，版本号与构建信息由原生读取、跟版时无需改 JS。改动收敛在少数文件并带 `// [BATCH]` 标记，便于后续跟进上游合并。
+++
+++## 13. v8：跟进上游 1.9.3
+++
+++| 项 | 值 |
+++|---|---|
+++| 被测产物 | `lx-music-mobile-v1.9.3-batch.1-{arm64-v8a,universal}.apk` |
+++| 版本 | `1.9.3-batch.1`（versionCode 85000，可覆盖 84000） |
+++| 基线 | 上游 v1.9.3（2026-11-28 发布），v1.9.2 基线停用 |
+++| 上游改动 | 9 提交 / 12 文件：歌词时间标签解析修复、音频卸载默认禁用（可在设置中手动开启）、wy 歌单加载修复、`lrc-file-parser` 2.4.2 → 2.5.0、`react-native-track-player` 换提交 |
+++| 合并方式 | 上游 1.9.2→1.9.3 的 unified diff 直接应用到改版树，12 文件零冲突；改版 8 处主干改动未被上游触及 |
+++
+++### 13.1 为兼容新依赖追加的适配
+++
+++| 文件 | 改动 | 原因 |
+++|---|---|---|
+++| `src/plugins/lyric.ts` | 构造参数 `offset: 100` → `globalOffset: 100` | `lrc-file-parser` 2.5.0 移除了 `offset` 选项，保留原值会让歌词偏移从 100ms 静默变成 0 |
+++| `test/harness.ts` | 夹具补 `copyrightId`，`musicBase` 放宽为 `any` | 上游给咪咕 `MusicInfo_mg` 增加了必填 `copyrightId`，测试脚手架类型不匹配 |
+++| `android/app/build.gradle` | `-batch.7` → `-batch.1` | 新基线重置改版序号 |
+++| `package.json` | 上游已改 `version 1.9.3` / `versionCode 80` | 联动 versionCode =（80+5）×1000 = 85000 |
+++
+++> `react-native-track-player` 是 GitHub 提交依赖，首次 `npm install` 未真正替换（目录时间戳仍是旧版），需删目录重装；重装后 `MusicManager.java` 才出现 `AUDIO_OFFLOAD_MODE_ENABLED : AUDIO_OFFLOAD_MODE_DISABLED` 的条件分支。
+++
+++### 13.2 验证结果
+++
+++| 项 | 结果 |
+++|---|---|
+++| 补丁应用 | 上游 diff 的 12 文件全部 `git apply --check` 通过；`package-lock.json` 有 1131 行偏移（改版 overrides 所致），仍应用成功 |
+++| `npx tsc --noEmit`（改动文件） | 0 错误（含 8 个上游改动文件、`batch.ts`、`lyric.ts`、`harness.ts`）；全项目剩 5 处上游既有 player/类型错误，与本次无关 |
+++| `npx eslint`（8 个改动文件） | 0 问题 |
+++| `node test/version-guard.mjs` | **9/9 通过**（更新检查仍被完全切断，UA 版本号来源未变） |
+++| 依赖版本 | `lrc-file-parser` 2.5.0、`react-native-track-player` commit `755501d` |
+++| Gradle `assembleRelease` | BUILD SUCCESSFUL（首次 2m33s，替换播放器后重编 41s） |
+++| APK 元数据 | 包名 `cn.toside.music.mobile.batch`、versionName `1.9.3-batch.1`、versionCode `85000`、应用名 `LX Music Batch`、arm64 包 `native-code: arm64-v8a` |
+++| APK 内 bundle 静态检查 | `raw.githubusercontent` / `lx-music-mobile-version-info` / `cdn.stsky.cn` / `jsdelivr` 命中 **0** |
+++| 补丁 | 84 文件、401 KB，`patch -p1 -E --dry-run` 在干净 v1.9.3 源码上退出码 0 |
+++| 产物校验 | `sha256sum -c SHA256SUMS.txt` 两个包均 OK |
+++
+++### 13.3 未覆盖
+++
+++- 真机验收四项（真实下载落盘、FLAC 后缀、仅 WiFi 阻断、错误日志导出）仍未执行，v7 遗留至今。
+++- 歌词 100ms 偏移改动只做了类型与代码层核对，未在真机上听感验证。
+++- 音频卸载默认关闭后的实际播放表现（长时间后台播放、切歌）未测。
+++
+++### 13.4 结论
+++
+++上游 1.9.3 与改版的改动面完全不重叠，跟进成本只有「应用 12 文件 diff + 改一行 batch 号」，没有合并冲突。唯一需要人工判断的是 `lrc-file-parser` 2.5.0 的构造参数改名——上游自己没适配，照抄会让歌词偏移失效，已在改版侧修正。
+++
+++## 14. v9：自定义源自动更新（1.9.3-batch.2）
+++
+++| 项 | 值 |
+++|---|---|
+++| 被测产物 | `lx-music-mobile-v1.9.3-batch.2-{arm64-v8a,universal}.apk` |
+++| 版本 | `1.9.3-batch.2`（versionCode 85001，可覆盖 85000） |
+++| 基线 | 上游 v1.9.3；本次改动只在本改版，不涉及上游合并 |
+++
+++### 14.1 改动内容
+++
+++| 文件 | 改动 |
+++|---|---|
+++| `src/utils/data.ts` | 新增 `updateUserApi(script)`：按脚本头 `@name` 匹配已有源，覆盖脚本全文并同步 version/description/author；无同名源时退化为新增 |
+++| `src/core/userApi.ts` | 新增 `updateUserApiByScript(script)`：写存储后刷新源列表，不重启 QuickJS 线程 |
+++| `src/core/init/userApi/index.ts` | 更新提示改为应用内下载：`fetchData(updateUrl)` → 校验 `/*! ... */` 文件头 → 覆盖同名源 → 提示重启生效；开关打开时跳过弹窗直接更新 |
+++| `src/utils/nativeModules/userApi.ts` | `UpdateInfoParams` 增加 `id`（由 `loadScriptInfo` 注入）；关闭了 `allowShowUpdateAlert` 但开启自动更新时仍放行事件 |
+++| `src/config/defaultSetting.ts`、`src/types/app_setting.d.ts` | 新增设置 `userApi.isAutoUpdate`，默认 `false` |
+++| `src/config/globalData.ts`、`src/types/app.d.ts` | 新增运行时标记 `isAutoUpdateUserApi`，供原生事件层判断 |
+++| `UserApiEditModal/index.tsx` | 自定义源管理弹窗底部新增「自动更新音源」勾选项 |
+++| 三语 `lang/*.json` | 新增 5 个键：立即更新、自动更新音源、成功、失败、无效脚本 |
+++| `android/app/build.gradle` | 引入 `batchIndex`，versionCode = 主版本 × 1000 + (batchIndex - 1) |
+++
+++### 14.2 验证结果
+++
+++| 项 | 结果 |
+++|---|---|
+++| `npx tsc --noEmit` | 改动文件 0 错误；全项目剩 5 处上游既有错误（player/类型），与本次无关 |
+++| `npx eslint`（9 个源文件） | 0 问题 |
+++| `node test/version-guard.mjs` | **9/9 通过**（App 自身更新检查仍被切断，未受影响） |
+++| Gradle `assembleRelease` | BUILD SUCCESSFUL，2m 8s |
+++| APK 元数据 | 包名 `cn.toside.music.mobile.batch`、versionName `1.9.3-batch.2`、versionCode `85001`、应用名 `LX Music Batch`、arm64 包 `native-code: arm64-v8a` |
+++| bundle 静态检查 | `user_api_is_auto_update`、`user_api_auto_update_success`、`user_api_update_alert_btn_update` 均在包内；中文「自动更新音源」「已更新到」「立即更新」按 UTF-16LE 命中 |
+++| 产物校验 | `sha256sum -c SHA256SUMS.txt` 两个包均 OK |
+++
+++### 14.3 未覆盖
+++
+++- 真机未验证：未实际跑通「服务端发新版 → App 内下载覆盖 → 重启生效」的完整链路；无 KVM，模拟器跑不稳该流程。
+++- 覆盖按 `@name` 匹配。若音源作者在新版里改了名称（例如续期后过期时间变化），会被判为新源而不是覆盖。此边界已知，未做兼容。
+++- 自动更新只替换脚本文件、不重启 JS 线程，更新后当�
 \ No newline at end of file
 diff --git a/docs/screenshots/01-drawer-downloads.png b/docs/screenshots/01-drawer-downloads.png
 new file mode 100644
@@ -3760,10 +3968,10 @@ index b70b252..111b323 100644
  ] as const
  
 diff --git a/src/config/defaultSetting.ts b/src/config/defaultSetting.ts
-index 872fbea..ea52080 100644
+index 872fbea..6f18a74 100644
 --- a/src/config/defaultSetting.ts
 +++ b/src/config/defaultSetting.ts
-@@ -68,7 +68,22 @@ const defaultSetting: LX.AppSetting = {
+@@ -68,10 +68,27 @@ const defaultSetting: LX.AppSetting = {
    'list.isSaveScrollLocation': true,
    'list.addMusicLocationType': 'top',
  
@@ -3786,6 +3994,24 @@ index 872fbea..ea52080 100644
 +  'download.isSaveLog': true,
  
    'sync.enable': false,
+ 
++  'userApi.isAutoUpdate': false,
++
+   // 'theme.id': 'blue_plus',
+   'theme.id': 'green',
+   'theme.lightId': 'green',
+diff --git a/src/config/globalData.ts b/src/config/globalData.ts
+index 45bb88c..361d635 100644
+--- a/src/config/globalData.ts
++++ b/src/config/globalData.ts
+@@ -46,6 +46,8 @@ global.lx = {
+ 
+   isEnableSyncLog: false,
+   isEnableUserApiLog: false,
++  // 自定义源自动更新：命中时跳过更新弹窗，直接下载覆盖脚本
++  isAutoUpdateUserApi: false,
+ 
+   playerTrackId: '',
  
 diff --git a/src/core/download/index.ts b/src/core/download/index.ts
 new file mode 100644
@@ -5308,6 +5534,122 @@ index f2801e8..24c7434 100644
    await initCommonState(setting)
    bootLog('Common State inited.')
  
+diff --git a/src/core/init/userApi/index.ts b/src/core/init/userApi/index.ts
+index 43e9693..532f9cb 100644
+--- a/src/core/init/userApi/index.ts
++++ b/src/core/init/userApi/index.ts
+@@ -1,13 +1,15 @@
+ import { type InitParams, onScriptAction, sendAction, type ResponseParams, type UpdateInfoParams, type RequestParams } from '@/utils/nativeModules/userApi'
+-import { log, setUserApiList, setUserApiStatus } from '@/core/userApi'
++import { log, setUserApiList, setUserApiStatus, updateUserApiByScript } from '@/core/userApi'
+ import settingState from '@/store/setting/state'
+ import BackgroundTimer from 'react-native-background-timer'
+ import { fetchData } from './request'
+ import { getUserApiList } from '@/utils/data'
+-import { confirmDialog, openUrl, tipDialog } from '@/utils/tools'
++import { confirmDialog, tipDialog } from '@/utils/tools'
+ 
+ 
+ export default async(setting: LX.AppSetting) => {
++  // 启动时同步自动更新开关，供原生事件层判断是否放行更新事件
++  global.lx.isAutoUpdateUserApi = setting['userApi.isAutoUpdate']
+   const userApiRequestMap = new Map<string, { resolve: (value: ResponseParams['result']) => void, reject: (error: Error) => void, timeout: number }>()
+   const scriptRequestMap = new Map<string, { request: Promise<any>, abort: () => void }>()
+ 
+@@ -189,27 +191,51 @@ export default async(setting: LX.AppSetting) => {
+     }
+     if (!global.lx.apiInitPromise[1]) global.lx.apiInitPromise[2](status)
+   }
+-  const showUpdateAlert = ({ name, log, updateUrl }: UpdateInfoParams) => {
+-    if (updateUrl) {
+-      void confirmDialog({
+-        message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
+-        // selection: true,
+-        // showCancel: true,
+-        confirmButtonText: global.i18n.t('user_api_update_alert_open_url'),
+-        cancelButtonText: global.i18n.t('close'),
+-      }).then(confirm => {
+-        if (!confirm) return
+-        setTimeout(() => {
+-          void openUrl(updateUrl)
+-        }, 300)
++  // 下载更新地址指向的脚本并覆盖同名源；不重启 JS 线程，新脚本下次启动生效
++  const downloadAndReplace = async(updateUrl: string) => {
++    const script = await fetchData(updateUrl, { method: 'get' }).request.then(resp => resp.body) as string
++    if (typeof script !== 'string' || !/^\/\*[\S|\s]+?\*\//.test(script)) {
++      throw new Error(global.i18n.t('user_api_auto_update_invalid_script'))
++    }
++    return updateUserApiByScript(script)
++  }
++  const handleUpdate = (name: string, updateUrl: string) => {
++    void downloadAndReplace(updateUrl).then(info => {
++      void tipDialog({
++        message: global.i18n.t('user_api_auto_update_success', { name: info.name, version: info.version }),
++        btnText: global.i18n.t('ok'),
+       })
+-    } else {
++    }).catch((error: any) => {
++      void tipDialog({
++        message: global.i18n.t('user_api_auto_update_failed', { name, message: error?.message ?? String(error) }),
++        btnText: global.i18n.t('ok'),
++      })
++    })
++  }
++  const showUpdateAlert = ({ name, log, updateUrl }: UpdateInfoParams) => {
++    if (!updateUrl) {
+       void tipDialog({
+         message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
+         // selection: true,
+         btnText: global.i18n.t('ok'),
+       })
++      return
+     }
++    // 开启自动更新后不再弹窗，直接下载覆盖
++    if (global.lx.isAutoUpdateUserApi) {
++      handleUpdate(name, updateUrl)
++      return
++    }
++    void confirmDialog({
++      message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
++      // selection: true,
++      // showCancel: true,
++      confirmButtonText: global.i18n.t('user_api_update_alert_btn_update'),
++      cancelButtonText: global.i18n.t('close'),
++    }).then(confirm => {
++      if (!confirm) return
++      handleUpdate(name, updateUrl)
++    })
+   }
+ 
+   onScriptAction((event) => {
+diff --git a/src/core/userApi.ts b/src/core/userApi.ts
+index ef2ed3b..f31dd1a 100644
+--- a/src/core/userApi.ts
++++ b/src/core/userApi.ts
+@@ -1,5 +1,5 @@
+ import { action, state } from '@/store/userApi'
+-import { addUserApi, getUserApiScript, removeUserApi as removeUserApiFromStore, setUserApiAllowShowUpdateAlert as setUserApiAllowShowUpdateAlertFromStore } from '@/utils/data'
++import { addUserApi, getUserApiList, getUserApiScript, removeUserApi as removeUserApiFromStore, setUserApiAllowShowUpdateAlert as setUserApiAllowShowUpdateAlertFromStore, updateUserApi as updateUserApiFromStore } from '@/utils/data'
+ import { destroy, loadScript } from '@/utils/nativeModules/userApi'
+ import { log as writeLog } from '@/utils/log'
+ 
+@@ -32,6 +32,16 @@ export const importUserApi = async(script: string) => {
+   action.addUserApi(info)
+ }
+ 
++/**
++ * 用新脚本覆盖同名自定义源，并刷新列表。
++ * 只写存储与状态，不重启 JS 线程，新脚本在下次启动或切换源后生效。
++ */
++export const updateUserApiByScript = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
++  const info = await updateUserApiFromStore(script)
++  action.setUserApiList(await getUserApiList())
++  return info
++}
++
+ export const removeUserApi = async(ids: string[]) => {
+   const list = await removeUserApiFromStore(ids)
+   action.setUserApiList(list)
 diff --git a/src/core/version.ts b/src/core/version.ts
 index 0c92fbf..2ae6748 100644
 --- a/src/core/version.ts
@@ -5417,7 +5759,7 @@ index 0c92fbf..2ae6748 100644
    versionActions.setIgnoreVersion(version)
    saveIgnoreVersion(version)
 diff --git a/src/lang/en-us.json b/src/lang/en-us.json
-index 3d9be61..5e5c313 100644
+index 3d9be61..54ef44a 100644
 --- a/src/lang/en-us.json
 +++ b/src/lang/en-us.json
 @@ -388,6 +388,23 @@
@@ -5444,7 +5786,7 @@ index 3d9be61..5e5c313 100644
    "share_card_title_music": "Share \"{name}\" to...",
    "share_title_music": "Song Sharing",
    "singer": "Artist: {name}",
-@@ -518,5 +535,93 @@
+@@ -518,5 +535,98 @@
    "version_title_latest": "🎉 The current version is already the latest 🎊",
    "version_title_new": "🌟 New version found 🌟",
    "version_title_unknown": "❓ Failed to get the latest version information ❓",
@@ -5537,10 +5879,15 @@ index 3d9be61..5e5c313 100644
 +  "download_retry_lyric_none": "All downloaded songs already have lyrics",
 +  "download_retry_lyric_done": "Lyrics restored for {ok} song(s)",
 +  "download_retry_lyric_partial": "{ok} restored, {fail} still missing lyrics",
-+  "download_retry_lyric_disabled": "Lyric download is off. Enable it in Settings - Download"
++  "download_retry_lyric_disabled": "Lyric download is off. Enable it in Settings - Download",
++  "user_api_update_alert_btn_update": "Update now",
++  "user_api_is_auto_update": "Auto-update sources",
++  "user_api_auto_update_success": "\"{name}\" updated to {version}, restart the app to take effect",
++  "user_api_auto_update_failed": "Failed to auto-update \"{name}\": {message}",
++  "user_api_auto_update_invalid_script": "The downloaded content is not a valid source script"
  }
 diff --git a/src/lang/zh-cn.json b/src/lang/zh-cn.json
-index 683d8bf..b3d55b1 100644
+index 683d8bf..e4b1712 100644
 --- a/src/lang/zh-cn.json
 +++ b/src/lang/zh-cn.json
 @@ -388,6 +388,23 @@
@@ -5567,7 +5914,7 @@ index 683d8bf..b3d55b1 100644
    "share_card_title_music": "将「{name}」分享到...",
    "share_title_music": "歌曲分享",
    "singer": "艺术家：{name}",
-@@ -518,5 +535,93 @@
+@@ -518,5 +535,98 @@
    "version_title_latest": "🎉 当前版本已是最新 🎊",
    "version_title_new": "🌟 发现新版本 🌟",
    "version_title_unknown": "❓ 获取最新版本信息失败 ❓",
@@ -5660,10 +6007,15 @@ index 683d8bf..b3d55b1 100644
 +  "download_retry_lyric_none": "已下载的歌曲都有歌词，不需要重下",
 +  "download_retry_lyric_done": "歌词已补齐（{ok} 首）",
 +  "download_retry_lyric_partial": "补齐 {ok} 首，仍有 {fail} 首未获取到歌词",
-+  "download_retry_lyric_disabled": "没有开启歌词下载，请先到「设置 → 下载」打开"
++  "download_retry_lyric_disabled": "没有开启歌词下载，请先到「设置 → 下载」打开",
++  "user_api_update_alert_btn_update": "立即更新",
++  "user_api_is_auto_update": "自动更新音源",
++  "user_api_auto_update_success": "「{name}」已更新到 {version}，重启应用后生效",
++  "user_api_auto_update_failed": "自动更新「{name}」失败：{message}",
++  "user_api_auto_update_invalid_script": "下载的内容不是有效的音源脚本"
  }
 diff --git a/src/lang/zh-tw.json b/src/lang/zh-tw.json
-index 2bec8f5..1e76b4c 100644
+index 2bec8f5..ea25c64 100644
 --- a/src/lang/zh-tw.json
 +++ b/src/lang/zh-tw.json
 @@ -388,6 +388,23 @@
@@ -5690,7 +6042,7 @@ index 2bec8f5..1e76b4c 100644
    "share_card_title_music": "將「{name}」分享到...",
    "share_title_music": "歌曲分享",
    "singer": "演出者：{name}",
-@@ -518,5 +535,93 @@
+@@ -518,5 +535,98 @@
    "version_title_latest": "🎉 目前版本已是最新 🎊",
    "version_title_new": "🌟 發現新版本 🌟",
    "version_title_unknown": "❓ 獲取最新版本資訊失敗 ❓",
@@ -5783,7 +6135,12 @@ index 2bec8f5..1e76b4c 100644
 +  "download_retry_lyric_none": "已下載的歌曲都有歌詞，不需要重下",
 +  "download_retry_lyric_done": "歌詞已補齊（{ok} 首）",
 +  "download_retry_lyric_partial": "補齊 {ok} 首，仍有 {fail} 首未取得歌詞",
-+  "download_retry_lyric_disabled": "沒有開啟歌詞下載，請先到「設定 → 下載」開啟"
++  "download_retry_lyric_disabled": "沒有開啟歌詞下載，請先到「設定 → 下載」開啟",
++  "user_api_update_alert_btn_update": "立即更新",
++  "user_api_is_auto_update": "自動更新音源",
++  "user_api_auto_update_success": "「{name}」已更新至 {version}，重新啟動應用程式後生效",
++  "user_api_auto_update_failed": "自動更新「{name}」失敗：{message}",
++  "user_api_auto_update_invalid_script": "下載的內容不是有效的音源腳本"
  }
 diff --git a/src/navigation/components/VersionModal.tsx b/src/navigation/components/VersionModal.tsx
 index f46de0f..6b63493 100644
@@ -6818,6 +7175,53 @@ index 8e7f1a9..993282d 100644
      case 'sync': return <Sync />
      case 'backup': return <Backup />
      case 'other': return <Other />
+diff --git a/src/screens/Home/Views/Setting/settings/Basic/UserApiEditModal/index.tsx b/src/screens/Home/Views/Setting/settings/Basic/UserApiEditModal/index.tsx
+index ae5a8c4..186fc12 100644
+--- a/src/screens/Home/Views/Setting/settings/Basic/UserApiEditModal/index.tsx
++++ b/src/screens/Home/Views/Setting/settings/Basic/UserApiEditModal/index.tsx
+@@ -6,6 +6,9 @@ import { useTheme } from '@/store/theme/hook'
+ import { useI18n } from '@/lang'
+ import Dialog, { type DialogType } from '@/components/common/Dialog'
+ import Button from '@/components/common/Button'
++import { updateSetting } from '@/core/common'
++import { useSettingValue } from '@/store/setting/hook'
++import CheckBoxItem from '../../../components/CheckBoxItem'
+ import List from './List'
+ import ImportBtn from './ImportBtn'
+ 
+@@ -68,6 +71,12 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
+   const [visible, setVisible] = useState(false)
+   const theme = useTheme()
+   const t = useI18n()
++  const isAutoUpdate = useSettingValue('userApi.isAutoUpdate')
++  const setIsAutoUpdate = (enable: boolean) => {
++    updateSetting({ 'userApi.isAutoUpdate': enable })
++    // 原生事件层靠这个标记决定是否放行更新事件
++    global.lx.isAutoUpdateUserApi = enable
++  }
+ 
+   const handleShow = () => {
+     dialogRef.current?.setVisible(true)
+@@ -107,6 +116,9 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
+               {/* <UrlInput ref={inputRef} /> */}
+               <Text size={16} style={styles.title}>{t('user_api_title')}</Text>
+               <List />
++              <View style={styles.checkBox}>
++                <CheckBoxItem check={isAutoUpdate} label={t('user_api_is_auto_update')} onChange={setIsAutoUpdate} />
++              </View>
+               <View style={styles.tips}>
+                 <Text style={styles.tipsText} size={12}>
+                   {t('user_api_readme')}
+@@ -145,6 +157,9 @@ const styles = createStyle({
+     textAlign: 'center',
+     // backgroundColor: 'rgba(0, 0, 0, 0.2)',
+   },
++  checkBox: {
++    marginTop: 10,
++  },
+   tips: {
+     paddingHorizontal: 7,
+     marginTop: 15,
 diff --git a/src/screens/Home/Views/Setting/settings/Download/BehaviorOptions.tsx b/src/screens/Home/Views/Setting/settings/Download/BehaviorOptions.tsx
 new file mode 100644
 index 0000000..8f18933
@@ -7701,11 +8105,23 @@ index d482188..2f0586c 100644
    },
    ignoreVersion: null,
    progress: {
+diff --git a/src/types/app.d.ts b/src/types/app.d.ts
+index 63ce869..c8c9f9b 100644
+--- a/src/types/app.d.ts
++++ b/src/types/app.d.ts
+@@ -32,6 +32,7 @@ interface GlobalData {
+   isPlayedStop: boolean
+   isEnableSyncLog: boolean
+   isEnableUserApiLog: boolean
++  isAutoUpdateUserApi: boolean
+   playerTrackId: string
+ 
+   qualityList: LX.QualityList
 diff --git a/src/types/app_setting.d.ts b/src/types/app_setting.d.ts
-index 2d12c26..d3bdcce 100644
+index 2d12c26..bf3d041 100644
 --- a/src/types/app_setting.d.ts
 +++ b/src/types/app_setting.d.ts
-@@ -349,7 +349,82 @@ declare global {
+@@ -349,12 +349,92 @@ declare global {
        /**
         * 文件命名方式
         */
@@ -7789,6 +8205,47 @@ index 2d12c26..d3bdcce 100644
  
        /**
         * 是否启用同步
+        */
+       'sync.enable': boolean
++
++      /**
++       * 自定义源发现新版本时是否自动下载并替换（静默更新）
++       */
++      'userApi.isAutoUpdate': boolean
+     }
+   }
+ }
+diff --git a/src/utils/data.ts b/src/utils/data.ts
+index 6f1ac7d..e0cfa90 100644
+--- a/src/utils/data.ts
++++ b/src/utils/data.ts
+@@ -570,6 +570,26 @@ export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo>
+   ])
+   return apiInfo
+ }
++/**
++ * 用新脚本覆盖已有的同名自定义源（按 @name 匹配），找不到同名源时退化为新增。
++ * 脚本内容与列表元信息一并更新，返回更新后的源信息。
++ */
++export const updateUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
++  const result = /^\/\*[\S|\s]+?\*\//.exec(script)
++  if (!result) throw new Error(global.i18n.t('user_api_add_failed_tip'))
++
++  const scriptInfo = matchInfo(result[0])
++  if (!userApis.length) await getUserApiList()
++  const target = userApis.find(api => api.name == scriptInfo.name)
++  if (!target || !scriptInfo.name) return addUserApi(script)
++
++  Object.assign(target, scriptInfo)
++  await saveDataMultiple([
++    [userApiPrefix, userApis],
++    [`${userApiPrefix}${target.id}`, script],
++  ])
++  return { ...target }
++}
+ export const removeUserApi = async(ids: string[]) => {
+   if (!userApis) return []
+   const _ids: string[] = []
 diff --git a/src/utils/fs.ts b/src/utils/fs.ts
 index c776712..46b255a 100644
 --- a/src/utils/fs.ts
@@ -7877,6 +8334,30 @@ index 0000000..17d2ed9
 +    return ''
 +  }
 +}
+diff --git a/src/utils/nativeModules/userApi.ts b/src/utils/nativeModules/userApi.ts
+index a32f93b..7d860b3 100644
+--- a/src/utils/nativeModules/userApi.ts
++++ b/src/utils/nativeModules/userApi.ts
+@@ -49,6 +49,7 @@ export interface ResponseParams {
+   result: any
+ }
+ export interface UpdateInfoParams {
++  id: string
+   name: string
+   log: string
+   updateUrl: string
+@@ -85,7 +86,10 @@ export const onScriptAction = (handler: (event: ActionsEvent) => void): () => vo
+       if (event.data.info) event.data.info = { ...loadScriptInfo, ...event.data.info }
+       else event.data.info = { ...loadScriptInfo }
+     } else if (event.action == 'showUpdateAlert') {
+-      if (!loadScriptInfo?.allowShowUpdateAlert) return
++      // 把当前加载的源 id 一并带上，供自动更新精确定位要覆盖的条目
++      event.data.id = loadScriptInfo?.id
++      // 开启自动更新后，即使单个源关闭了更新提示，也要把事件交给业务层执行静默更新
++      if (!loadScriptInfo?.allowShowUpdateAlert && !global.lx.isAutoUpdateUserApi) return
+     }
+     handler(event as ActionsEvent)
+   })
 diff --git a/src/utils/version.js b/src/utils/version.js
 index 88d2d5a..9010f52 100644
 --- a/src/utils/version.js

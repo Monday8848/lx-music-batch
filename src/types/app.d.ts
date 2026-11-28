@@ -32,6 +32,7 @@ interface GlobalData {
   isPlayedStop: boolean
   isEnableSyncLog: boolean
   isEnableUserApiLog: boolean
+  isAutoUpdateUserApi: boolean
   playerTrackId: string
 
   qualityList: LX.QualityList

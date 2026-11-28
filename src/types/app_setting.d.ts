@@ -430,6 +430,11 @@ declare global {
        * 是否启用同步
        */
       'sync.enable': boolean
+
+      /**
+       * 自定义源发现新版本时是否自动下载并替换（静默更新）
+       */
+      'userApi.isAutoUpdate': boolean
     }
   }
 }

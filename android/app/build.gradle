@@ -98,8 +98,10 @@ def getNpmPackageJson() {
     return packageJson
 }
 def npmPackageJson = getNpmPackageJson()
+// 改版序号：同一上游基线上每次迭代递增，versionCode 同步 +1，保证可覆盖安装
+def batchIndex = 2
 def verCode = npmPackageJson["versionCode"] + 5
-def verName = npmPackageJson["version"] + "-batch.1"
+def verName = npmPackageJson["version"] + "-batch.${batchIndex}"
 def applicationName = npmPackageJson["name"]
 
 android {
@@ -175,7 +177,7 @@ android {
             // 共存版：所有产物统一用「主版本 * 1000」作为 versionCode。
             // 上游原本给分架构包 +1/+2/+3，universal 却保留原始 versionCode，
             // 导致 universal 包（81）比上一版的分架构包（80003）还小，装上去会被判定为降级。
-            output.versionCodeOverride = defaultConfig.versionCode * 1000
+            output.versionCodeOverride = defaultConfig.versionCode * 1000 + (batchIndex - 1)
             if (abi == null) {  // null for the universal-debug, universal-release variants
                 output.outputFileName =
                         "${applicationName}-v${defaultConfig.versionName}-universal.apk"

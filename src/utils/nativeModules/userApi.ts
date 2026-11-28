@@ -49,6 +49,7 @@ export interface ResponseParams {
   result: any
 }
 export interface UpdateInfoParams {
+  id: string
   name: string
   log: string
   updateUrl: string
@@ -85,7 +86,10 @@ export const onScriptAction = (handler: (event: ActionsEvent) => void): () => vo
       if (event.data.info) event.data.info = { ...loadScriptInfo, ...event.data.info }
       else event.data.info = { ...loadScriptInfo }
     } else if (event.action == 'showUpdateAlert') {
-      if (!loadScriptInfo?.allowShowUpdateAlert) return
+      // 把当前加载的源 id 一并带上，供自动更新精确定位要覆盖的条目
+      event.data.id = loadScriptInfo?.id
+      // 开启自动更新后，即使单个源关闭了更新提示，也要把事件交给业务层执行静默更新
+      if (!loadScriptInfo?.allowShowUpdateAlert && !global.lx.isAutoUpdateUserApi) return
     }
     handler(event as ActionsEvent)
   })

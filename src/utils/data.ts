@@ -570,6 +570,26 @@ export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo>
   ])
   return apiInfo
 }
+/**
+ * 用新脚本覆盖已有的同名自定义源（按 @name 匹配），找不到同名源时退化为新增。
+ * 脚本内容与列表元信息一并更新，返回更新后的源信息。
+ */
+export const updateUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo> => {
+  const result = /^\/\*[\S|\s]+?\*\//.exec(script)
+  if (!result) throw new Error(global.i18n.t('user_api_add_failed_tip'))
+
+  const scriptInfo = matchInfo(result[0])
+  if (!userApis.length) await getUserApiList()
+  const target = userApis.find(api => api.name == scriptInfo.name)
+  if (!target || !scriptInfo.name) return addUserApi(script)
+
+  Object.assign(target, scriptInfo)
+  await saveDataMultiple([
+    [userApiPrefix, userApis],
+    [`${userApiPrefix}${target.id}`, script],
+  ])
+  return { ...target }
+}
 export const removeUserApi = async(ids: string[]) => {
   if (!userApis) return []
   const _ids: string[] = []

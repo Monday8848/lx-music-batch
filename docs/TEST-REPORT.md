@@ -539,3 +539,47 @@ return file.mkdir(name).buildFileInfo();
 ### 13.4 结论
 
 上游 1.9.3 与改版的改动面完全不重叠，跟进成本只有「应用 12 文件 diff + 改一行 batch 号」，没有合并冲突。唯一需要人工判断的是 `lrc-file-parser` 2.5.0 的构造参数改名——上游自己没适配，照抄会让歌词偏移失效，已在改版侧修正。
+
+## 14. v9：自定义源自动更新（1.9.3-batch.2）
+
+| 项 | 值 |
+|---|---|
+| 被测产物 | `lx-music-mobile-v1.9.3-batch.2-{arm64-v8a,universal}.apk` |
+| 版本 | `1.9.3-batch.2`（versionCode 85001，可覆盖 85000） |
+| 基线 | 上游 v1.9.3；本次改动只在本改版，不涉及上游合并 |
+
+### 14.1 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| `src/utils/data.ts` | 新增 `updateUserApi(script)`：按脚本头 `@name` 匹配已有源，覆盖脚本全文并同步 version/description/author；无同名源时退化为新增 |
+| `src/core/userApi.ts` | 新增 `updateUserApiByScript(script)`：写存储后刷新源列表，不重启 QuickJS 线程 |
+| `src/core/init/userApi/index.ts` | 更新提示改为应用内下载：`fetchData(updateUrl)` → 校验 `/*! ... */` 文件头 → 覆盖同名源 → 提示重启生效；开关打开时跳过弹窗直接更新 |
+| `src/utils/nativeModules/userApi.ts` | `UpdateInfoParams` 增加 `id`（由 `loadScriptInfo` 注入）；关闭了 `allowShowUpdateAlert` 但开启自动更新时仍放行事件 |
+| `src/config/defaultSetting.ts`、`src/types/app_setting.d.ts` | 新增设置 `userApi.isAutoUpdate`，默认 `false` |
+| `src/config/globalData.ts`、`src/types/app.d.ts` | 新增运行时标记 `isAutoUpdateUserApi`，供原生事件层判断 |
+| `UserApiEditModal/index.tsx` | 自定义源管理弹窗底部新增「自动更新音源」勾选项 |
+| 三语 `lang/*.json` | 新增 5 个键：立即更新、自动更新音源、成功、失败、无效脚本 |
+| `android/app/build.gradle` | 引入 `batchIndex`，versionCode = 主版本 × 1000 + (batchIndex - 1) |
+
+### 14.2 验证结果
+
+| 项 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | 改动文件 0 错误；全项目剩 5 处上游既有错误（player/类型），与本次无关 |
+| `npx eslint`（9 个源文件） | 0 问题 |
+| `node test/version-guard.mjs` | **9/9 通过**（App 自身更新检查仍被切断，未受影响） |
+| Gradle `assembleRelease` | BUILD SUCCESSFUL，2m 8s |
+| APK 元数据 | 包名 `cn.toside.music.mobile.batch`、versionName `1.9.3-batch.2`、versionCode `85001`、应用名 `LX Music Batch`、arm64 包 `native-code: arm64-v8a` |
+| bundle 静态检查 | `user_api_is_auto_update`、`user_api_auto_update_success`、`user_api_update_alert_btn_update` 均在包内；中文「自动更新音源」「已更新到」「立即更新」按 UTF-16LE 命中 |
+| 产物校验 | `sha256sum -c SHA256SUMS.txt` 两个包均 OK |
+
+### 14.3 未覆盖
+
+- 真机未验证：未实际跑通「服务端发新版 → App 内下载覆盖 → 重启生效」的完整链路；无 KVM，模拟器跑不稳该流程。
+- 覆盖按 `@name` 匹配。若音源作者在新版里改了名称（例如续期后过期时间变化），会被判为新源而不是覆盖。此边界已知，未做兼容。
+- 自动更新只替换脚本文件、不重启 JS 线程，更新后当前会话仍用旧脚本，需重启或切换音源。
+
+### 14.4 结论
+
+官方版的更新提示只能跳浏览器，本改版把下载、校验、覆盖三步收进应用内，并额外提供静默自动更新开关。改动集中在自定义源初始化与存储层，不触碰播放、下载与界面主流程，回归结果与上一版一致。
